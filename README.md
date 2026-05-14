@@ -1,86 +1,82 @@
-<!--
- Licensed to the Apache Software Foundation (ASF) under one
- or more contributor license agreements.  See the NOTICE file
- distributed with this work for additional information
- regarding copyright ownership.  The ASF licenses this file
- to you under the Apache License, Version 2.0 (the
- "License"); you may not use this file except in compliance
- with the License.  You may obtain a copy of the License at
+# LPPM ITERA Data Lakehouse
 
-   http://www.apache.org/licenses/LICENSE-2.0
+A local data lakehouse for organizing research paper data, built on **Apache Iceberg** with **MinIO** as object storage, **Spark** for compute, **Apache Superset** for BI, and **Apache Airflow** for orchestration.
 
- Unless required by applicable law or agreed to in writing,
- software distributed under the License is distributed on an
- "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- KIND, either express or implied.  See the License for the
- specific language governing permissions and limitations
- under the License.
--->
+## Stack
 
-# Spark + Iceberg Quickstart Image
+| Service           | URL                          | Default credentials |
+| ----------------- | ---------------------------- | ------------------- |
+| Jupyter (Spark)   | http://localhost:8888        | —                   |
+| Spark UI          | http://localhost:8080        | —                   |
+| Iceberg REST      | http://localhost:8181        | —                   |
+| MinIO Console     | http://localhost:9001        | `admin` / `password`|
+| Superset          | http://localhost:8088        | `admin` / `admin`   |
+| Airflow Webserver | http://localhost:8082        | `airflow` / `airflow` |
 
-This is a docker compose environment to quickly get up and running with a Spark environment and a local REST
-catalog, and MinIO as a storage backend.
+## Prerequisites
 
-**note**: If you don't have docker installed, you can head over to the [Get Docker](https://docs.docker.com/get-docker/)
-page for installation instructions.
+- Docker Desktop (or Docker Engine + Compose v2)
+- Minimum 8 GB RAM free for the stack
+- On Windows: WSL2 backend recommended
 
-## Usage
-Start up the notebook server by running the following.
-```
-docker-compose up
-```
-
-The notebook server will then be available at http://localhost:8888
-
-While the notebook server is running, you can use any of the following commands if you prefer to use spark-shell, spark-sql, or pyspark.
-```
-docker exec -it spark-iceberg spark-shell
-```
-```
-docker exec -it spark-iceberg spark-sql
-```
-```
-docker exec -it spark-iceberg pyspark
-```
-
-To stop everything, just run `docker-compose down`.
-
-## Troubleshooting & Maintenance
-
-### Refreshing Docker Image
-
-The prebuilt spark image is uploaded to Dockerhub. Out of convenience, the image tag defaults to `latest`.
-
-If you have an older version of the image, you might need to remove it to upgrade.
-```bash
-docker image rm tabulario/spark-iceberg && docker-compose pull
-```
-
-### Building the Docker Image locally
-
-If you want to make changes to the local files, and test them out, you can build the image locally and use that instead:
+## Quick start
 
 ```bash
-docker image rm tabulario/spark-iceberg && docker-compose build
+docker compose up -d
 ```
 
-### Use `Dockerfile` In This Repo
+First run takes a few minutes (image builds + DB migrations). Watch progress with:
 
-To directly use the Dockerfile in this repo (as opposed to pulling the pre-build `tabulario/spark-iceberg` image), you can use `docker-compose build`.
-
-### Deploying Changes
-
-To deploy changes to the hosted docker image `tabulario/spark-iceberg`, run the following. (Requires access to the tabulario docker hub account)
-
-```sh
-cd spark
-docker buildx build -t tabulario/spark-iceberg --platform=linux/amd64,linux/arm64 . --push
+```bash
+docker compose ps
+docker compose logs -f airflow-init superset-init
 ```
 
----
+Tear it down (preserving volumes):
 
-For more information on getting started with using Iceberg, checkout
-the [Quickstart](https://iceberg.apache.org/spark-quickstart/) guide in the official docs.
+```bash
+docker compose down
+```
 
-The repository for the docker image is [located on dockerhub](https://hub.docker.com/r/tabulario/spark-iceberg).
+Tear it down and wipe all data:
+
+```bash
+docker compose down -v
+```
+
+## Project layout
+
+```
+.
+├── airflow/            # Airflow DAGs, plugins, config, init script
+├── dags/               # (legacy) Airflow DAG samples
+├── minio/              # MinIO bucket bootstrap script (mc-init.sh)
+├── notebooks/          # Jupyter notebooks (mounted into spark-iceberg)
+├── pipeline/           # Reusable Python pipeline code
+├── spark/              # Spark + Iceberg image build context
+├── superset/           # Superset image, config, init script
+├── warehouse/          # Local Iceberg warehouse (bind-mounted)
+└── docker-compose.yaml
+```
+
+## Common tasks
+
+Open a Spark shell inside the container:
+
+```bash
+docker compose exec spark-iceberg pyspark
+```
+
+Run an Airflow CLI command:
+
+```bash
+docker compose --profile debug run --rm airflow-cli airflow dags list
+```
+
+Reset Superset metadata only:
+
+```bash
+docker compose down
+docker volume rm lppm-itera-lakehouse-iceberg_superset-db-data
+docker compose up -d
+```

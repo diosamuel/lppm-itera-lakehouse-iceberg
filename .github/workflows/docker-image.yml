@@ -1,16 +1,28 @@
-name: Spark Iceberg image
+name: Lakehouse images
 
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Docker tag to apply to this image'
+        description: 'Docker tag to apply to the built images'
         required: true
         type: string
 
 jobs:
   docker:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: spark-iceberg
+            context: spark/
+            file: spark/Dockerfile
+            image: tabulario/spark-iceberg
+          - name: superset
+            context: superset/
+            file: superset/Dockerfile
+            image: tabulario/superset-iceberg
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,26 +39,26 @@ jobs:
           username: tabulario
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
 
-      - name: Build and Push
+      - name: Build and Push (main)
         uses: docker/build-push-action@v6
         if: ${{ github.ref_name == 'main' }}
         env:
           IMAGE_TAG: ${{ inputs.tag }}
         with:
-          context: spark/
-          file: spark/Dockerfile
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: tabulario/spark-iceberg:latest,tabulario/spark-iceberg:${{ inputs.tag }}
+          tags: ${{ matrix.image }}:latest,${{ matrix.image }}:${{ inputs.tag }}
 
-      - name: Build and Push
+      - name: Build and Push (non-main)
         uses: docker/build-push-action@v6
         if: ${{ github.ref_name != 'main' }}
         env:
           IMAGE_TAG: ${{ inputs.tag }}
         with:
-          context: spark/
-          file: spark/Dockerfile
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: tabulario/spark-iceberg:${{ inputs.tag }}
+          tags: ${{ matrix.image }}:${{ inputs.tag }}

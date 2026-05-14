@@ -1,0 +1,10 @@
+# Drivers needed for the LPPM ITERA Lakehouse stack.
+# Iceberg REST catalog is queried through Trino; Spark Thrift Server via PyHive.
+psycopg2-binary==2.9.9
+redis==4.6.0
+trino[sqlalchemy]==0.328.0
+sqlalchemy-trino==0.5.0
+PyHive[hive]==0.7.0
+thrift==0.16.0
+thrift-sasl==0.4.3
+sasl==0.3.1

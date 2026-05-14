@@ -1,0 +1,6 @@
+# Force LF line endings for shell scripts and Dockerfiles so Windows
+# checkouts don't break Linux containers via CRLF.
+*.sh        text eol=lf
+*.bash      text eol=lf
+Dockerfile  text eol=lf
+*.Dockerfile text eol=lf

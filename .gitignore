@@ -190,4 +190,5 @@ notebooks
 
 .vscode
 
-/sipaper-itera
+data/
+minio_data/
