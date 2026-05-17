@@ -17,7 +17,7 @@ A local data lakehouse for organizing research paper data, built on **Apache Ice
 
 - Docker Desktop (or Docker Engine + Compose v2)
 - Minimum 8 GB RAM free for the stack
-- On Windows: WSL2 backend recommended
+- On Windows: WSL2 backend recommended      
 
 ## Quick start
 

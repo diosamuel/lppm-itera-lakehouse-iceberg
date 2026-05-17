@@ -92,7 +92,7 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
 #  && curl https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2021-05.parquet -o /home/iceberg/data/yellow_tripdata_2021-05.parquet \
 #  && curl https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2021-04.parquet -o /home/iceberg/data/yellow_tripdata_2021-04.parquet
 
-RUN mkdir -p /home/iceberg/localwarehouse /home/iceberg/notebooks /home/iceberg/warehouse /home/iceberg/spark-events /home/iceberg
+RUN mkdir -p /home/iceberg/notebooks /home/iceberg/spark-events /home/iceberg
 COPY notebooks/ /home/iceberg/notebooks
 
 # Bind-mount local notebooks for live edit (Jupyter uses --notebook-dir=/home/iceberg/notebooks below).

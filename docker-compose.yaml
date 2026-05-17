@@ -59,9 +59,7 @@ services:
       - rest
       - minio
     volumes:
-      - ./warehouse:/home/iceberg/warehouse
-      - ./notebooks:/home/iceberg/notebooks/notebooks
-      - ./spark/notebooks/data:/home/iceberg/dataset
+      - ./spark/notebooks/:/home/iceberg/notebooks
     environment:
       - AWS_ACCESS_KEY_ID=admin
       - AWS_SECRET_ACCESS_KEY=password
