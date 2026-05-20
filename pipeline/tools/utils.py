@@ -1,9 +1,9 @@
 import re
 
 """
-matchNIP: Nomor Induk Pegawai
+matchUniqueID: Nomor Induk Pegawai
 """
-def matchNIP(text):
+def matchUniqueID(text):
     if isinstance(text, list):
         result=list(map(lambda x: re.findall(r'\((.*?)\)', x),text))
         return result
@@ -24,3 +24,46 @@ def getFaculty(text):
         "FTIK": "Fakultas Teknologi Industri dan Kewilayahan"
     }
     return mapper[text.split("-")[0].strip()]
+
+"""
+mapFacultyDegree: prodi ke fakultas
+"""
+def mapFacultyDegree():
+  mapper = {
+    "FS": [
+        "biologi",
+        "fisika",
+        "sains lingkungan kelautan",
+        "sains atmosfer dan keplanetan",
+        "sains data",
+        "farmasi",
+        "kimia",
+        "aktuaria"
+    ],
+
+    "FTI": [
+        "teknik pertambangan",
+        "teknik elektro",
+        "teknik informatika",
+        "teknik kimia",
+        "teknologi pangan",
+        "teknik geologi",
+        "rekayasa kosmetik",
+        "teknik material",
+        "teknik biosistem",
+        "teknik biomedis",
+        "teknik fisika",
+        "teknik geofisika",
+        "teknologi industri pertanian"
+    ],
+
+    "FTIK": [
+        "perencanaan wilayah dan kota",
+        "teknik sipil",
+        "arsitektur",
+        "teknik lingkungan",
+        "teknik geomatika",
+        "teknik perkeretaapian",
+        "desain komunikasi visual"
+    ]
+}
