@@ -53,7 +53,7 @@ ENV ICEBERG_VERSION=1.9.0
 # && rm -rf spark-${SPARK_VERSION}-bin-hadoop3.tgz
 
 RUN mkdir -p /opt/spark \
- && curl -L https://dlcdn.apache.org/spark/spark-4.1.1/spark-4.1.1-bin-hadoop3.tgz -o spark.tgz \
+ && curl -L https://archive.apache.org/dist/spark/spark-4.1.1/spark-4.1.1-bin-hadoop3.tgz -o spark.tgz \
  && tar -xzf spark.tgz -C /opt/spark --strip-components=1 \
  && rm spark.tgz
 
