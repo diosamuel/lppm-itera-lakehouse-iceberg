@@ -48,7 +48,7 @@ class MinioS3:
 
     @check_bucket
     @check_file
-    def upload(self, filename, filepath, bucket_exists=False, file_exists=False):
+    def upload(self, filename, folder, filepath, bucket_exists=False, file_exists=False):
         print(file_exists)
         if not bucket_exists:
             return {
@@ -61,7 +61,7 @@ class MinioS3:
                 "status": "error",
                 "message": "file exists"
             }
-        self.client.upload_file(filepath, self.bucket, filename)
+        self.client.upload_file(f"{folder}/{filepath}", self.bucket, filename)
         return {"status": "success", "bucket": self.bucket, "key": filename}
 
     @check_bucket
@@ -92,3 +92,14 @@ class MinioS3:
             "metadata": response.get("Metadata", {}),
         }
         return metadata
+
+    @check_bucket
+    def list_file(self,bucket_exists):
+        if not bucket_exists:
+            return {"status": "error", "message": f"Bucket '{self.bucket}' does not exist."}
+        
+        response = self.client.list_objects_v2(Bucket=self.bucket)
+        filename = []
+        for obj in response.get("Contents",[]):
+            filename.append(obj["Key"])
+        return filename

@@ -27,7 +27,7 @@ class SetupCatalog:
         """Create the namespace if it doesn't exist."""
         existing = [ns[0] for ns in self.catalog.list_namespaces()]
         if self.namespace not in existing:
-            self.catalog.create_namespace(self.namespace)
+            self.catalog.create_namespace_if_not_exists(self.namespace)
             print(f"Namespace '{self.namespace}' created.")
         else:
             print(f"Namespace '{self.namespace}' already exists.")
@@ -42,10 +42,3 @@ class SetupCatalog:
 
         table = self.catalog.create_table(full_name, schema=schema)
         return table
-
-
-if __name__ == "__main__":
-    catalog = SetupCatalog(catalog_name="lppm", namespace="default").init()
-    catalog.create_namespace()
-    table = catalog.create_table("sipaper", schema=lppm_schema)
-    print("Table schema:", table.schema())

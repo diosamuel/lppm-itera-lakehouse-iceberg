@@ -106,19 +106,15 @@ class Transform(Extract):
         return final_df
 
     def transformPenelitian(self):
-        """Transform penelitian sheets."""
         return self.transformDefault(self.getPenelitian())
 
     def transformPengabdian(self):
-        """Transform pengabdian sheets."""
         return self.transformDefault(self.getPengabdian())
 
     def transformBuku(self):
-        """Transform buku keilmuan sheets."""
         return self.transformDefault(self.getBuku())
 
     def transformSitasi(self):
-        """Transform sitasi sheets into a single Spark DataFrame."""
         spark_dfs = []
         for sheet_name in self.getSitasi():
             tahun = sheet_name.split("-")[-1].strip()
