@@ -186,9 +186,10 @@ metastore_db
 # Postgres data
 warehouse
 notebooks
-!spark/notebooks
+spark/notebooks
 
 .vscode
 
 data/
 minio_data/
+pdf/
