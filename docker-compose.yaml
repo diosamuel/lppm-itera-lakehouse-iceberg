@@ -69,7 +69,9 @@ services:
   spark-iceberg:
     image: tabulario/spark-iceberg
     container_name: lppm-spark-iceberg
-    build: spark/
+    build:
+      context: .
+      dockerfile: spark/Dockerfile
     networks:
       iceberg_net:
     depends_on:

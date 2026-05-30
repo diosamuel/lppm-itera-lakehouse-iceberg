@@ -30,7 +30,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Jupyter and other python deps
-COPY requirements.txt .
+COPY spark/requirements.txt .
 RUN pip3 install -r requirements.txt
 
 # Add scala kernel via spylon-kernel
@@ -52,11 +52,16 @@ ENV ICEBERG_VERSION=1.9.0
 # && tar xvzf spark-${SPARK_VERSION}-bin-hadoop3.tgz --directory /opt/spark --strip-components 1 \
 # && rm -rf spark-${SPARK_VERSION}-bin-hadoop3.tgz
 
+COPY bin/spark-4.1.1-bin-hadoop3.tgz /tmp/spark.tgz
 RUN mkdir -p /opt/spark \
- && curl -L https://archive.apache.org/dist/spark/spark-4.1.1/spark-4.1.1-bin-hadoop3.tgz -o spark.tgz \
- && tar -xzf spark.tgz -C /opt/spark --strip-components=1 \
- && rm spark.tgz
+ && tar -xzf /tmp/spark.tgz -C /opt/spark --strip-components=1 \
+ && rm /tmp/spark.tgz
 
+# RUN mkdir -p /opt/spark \
+#  && curl -L --retry 5 --retry-delay 10 https://archive.apache.org/dist/spark/spark-4.1.1/spark-4.1.1-bin-hadoop3.tgz -o spark.tgz \
+#  && tar -xzf spark.tgz -C /opt/spark --strip-components=1 \
+#  && rm spark.tgz
+ 
 # Download iceberg spark runtime
 RUN curl https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtime-${SPARK_MAJOR_VERSION}_2.12/${ICEBERG_VERSION}/iceberg-spark-runtime-${SPARK_MAJOR_VERSION}_2.12-${ICEBERG_VERSION}.jar -Lo /opt/spark/jars/iceberg-spark-runtime-${SPARK_MAJOR_VERSION}_2.12-${ICEBERG_VERSION}.jar
 
@@ -93,7 +98,7 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
 #  && curl https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2021-04.parquet -o /home/iceberg/data/yellow_tripdata_2021-04.parquet
 
 RUN mkdir -p /home/iceberg/notebooks /home/iceberg/spark-events /home/iceberg
-COPY notebooks/ /home/iceberg/notebooks
+COPY spark/notebooks/ /home/iceberg/notebooks
 
 # Bind-mount local notebooks for live edit (Jupyter uses --notebook-dir=/home/iceberg/notebooks below).
 # Run from this directory (spark/), after: docker build -t lppm-datalakehouse .
@@ -129,18 +134,18 @@ RUN echo '#! /bin/sh' >> /bin/pyspark-notebook \
  && chmod u+x /bin/pyspark-notebook
 
 RUN mkdir -p /root/.ipython/profile_default/startup
-COPY ipython/startup/00-prettytables.py /root/.ipython/profile_default/startup
-COPY ipython/startup/README /root/.ipython/profile_default/startup
+COPY spark/ipython/startup/00-prettytables.py /root/.ipython/profile_default/startup
+COPY spark/ipython/startup/README /root/.ipython/profile_default/startup
 
-COPY spark-defaults.conf /opt/spark/conf
+COPY spark/spark-defaults.conf /opt/spark/conf
 ENV PATH="/opt/spark/sbin:/opt/spark/bin:${PATH}"
 
 RUN chmod u+x /opt/spark/sbin/* && \
     chmod u+x /opt/spark/bin/*
 
-COPY .pyiceberg.yaml /root/.pyiceberg.yaml
+COPY spark/.pyiceberg.yaml /root/.pyiceberg.yaml
 
-COPY entrypoint.sh .
+COPY spark/entrypoint.sh .
 
 ENTRYPOINT ["./entrypoint.sh"]
 CMD ["notebook"]

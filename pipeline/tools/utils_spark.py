@@ -25,22 +25,40 @@ BULAN_MAP = {
 
 
 def matchUniqueID(text):
-    """Extract NIP/NIM from parenthesized text. Returns list of strings or None."""
+    """Extract NIP/NIM from parenthesized text. Returns list of numeric strings or None."""
     if isinstance(text, str):
-        result = re.findall(r'\((.*?)\)', text)
-        return [x if x.strip() else None for x in result] or None
+        result = re.findall(r'\((\d+)\)', text)
+        return result or None
     return None
 
 
-def matchName(text):
-    """Extract the name portion (everything outside parentheses), stripped."""
-    if isinstance(text, str):
-        name = re.sub(r'\(.*?\)', '', text).strip()
-        # Remove trailing/leading commas or semicolons left over
-        name = name.strip(",;").strip()
-        return name if name else None
-    return None
+# def matchName(text):
+#     """Extract the name portion (everything outside parentheses), stripped."""
+#     if isinstance(text, str):
+#         name = re.sub(r'\(.*?\)', '', text).strip()
+#         # Remove trailing/leading commas or semicolons left over
+#         name = name.strip(",;").strip()
+#         return name if name else None
+#     return None
 
+def matchNames(text):
+    """
+    Extract multiple names from string like:
+    "Dr. Andy Darmawan, S.Si., M.Si.(0031058501),Ayu Oshin Yap Sinaga, S.P., M.Si.(0008089102)"
+    → ["Dr. Andy Darmawan, S.Si., M.Si.", "Ayu Oshin Yap Sinaga, S.P., M.Si."]
+
+    Splits by ')' since each group ends with a closing parenthesis.
+    """
+    if not isinstance(text, str):
+        return None
+    parts = text.split(")")
+    names = []
+    for p in parts:
+        name = re.sub(r"\(.*", "", p).strip()
+        name = name.strip(",; ").strip()
+        if name:
+            names.append(name)
+    return names if names else None
 
 def getProdi(text):
     """Extract study program name from a raw label."""
@@ -83,7 +101,7 @@ def mapFacultyDegree(prodi):
             "teknik kimia", "teknologi pangan", "teknik geologi",
             "rekayasa kosmetik", "teknik material", "teknik biosistem",
             "teknik biomedis", "teknik fisika", "teknik geofisika",
-            "teknologi industri pertanian", "teknik industri", "teknik kelautan",
+            "teknologi industri pertanian", "teknik industri",
             "rekayasa keolahragaan", "teknik mesin", "teknik sistem energi",
             "rekayasa kehutanan", "rekayasa instrumentasi dan automasi",
             "rekayasa minyak dan gas",
@@ -92,7 +110,7 @@ def mapFacultyDegree(prodi):
             "perencanaan wilayah dan kota", "teknik sipil", "arsitektur",
             "arsitektur lanskap", "teknik lingkungan", "teknik geomatika",
             "teknik perkeretaapian", "desain komunikasi visual",
-            "rekayasa tata kelola air terpadu", "pariwisata",
+            "rekayasa tata kelola air terpadu", "pariwisata","teknik kelautan"
         ],
     }
 
@@ -168,7 +186,7 @@ def mapping_date(df, column):
 
 # user define function spark
 match_unique_id_udf = F.udf(matchUniqueID, ArrayType(StringType()))
-match_name_udf = F.udf(matchName, StringType())
+match_name_udf = F.udf(matchNames, ArrayType(StringType()))
 get_prodi_udf = F.udf(getProdi, StringType())
 get_faculty_udf = F.udf(getFaculty, StringType())
 map_faculty_degree_udf = F.udf(mapFacultyDegree, StringType())
