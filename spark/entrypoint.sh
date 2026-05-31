@@ -21,6 +21,10 @@ start-master.sh -p 7077
 start-worker.sh spark://spark-iceberg:7077
 
 start-history-server.sh
+
+# Clean stale Derby metastore to avoid "Directory already exists" errors
+rm -rf /tmp/derby
+
 start-thriftserver.sh  --driver-java-options "-Dderby.system.home=/tmp/derby"
 
 # Entrypoint, for example notebook, pyspark or spark-sql

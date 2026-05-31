@@ -11,7 +11,6 @@ MONTH_MAP = {
     "januari": 1, "februari": 2, "maret": 3, "april": 4,
     "mei": 5, "juni": 6, "juli": 7, "agustus": 8,
     "september": 9, "oktober": 10, "november": 11, "desember": 12,
-    # English fallback
     "january": 1, "february": 2, "march": 3, "may": 5,
     "june": 6, "july": 7, "august": 8, "october": 10, "december": 12,
 }
@@ -23,32 +22,13 @@ BULAN_MAP = {
     "oktober": "october", "november": "november", "desember": "december",
 }
 
-
 def matchUniqueID(text):
-    """Extract NIP/NIM from parenthesized text. Returns list of numeric strings or None."""
     if isinstance(text, str):
         result = re.findall(r'\((\d+)\)', text)
         return result or None
     return None
 
-
-# def matchName(text):
-#     """Extract the name portion (everything outside parentheses), stripped."""
-#     if isinstance(text, str):
-#         name = re.sub(r'\(.*?\)', '', text).strip()
-#         # Remove trailing/leading commas or semicolons left over
-#         name = name.strip(",;").strip()
-#         return name if name else None
-#     return None
-
 def matchNames(text):
-    """
-    Extract multiple names from string like:
-    "Dr. Andy Darmawan, S.Si., M.Si.(0031058501),Ayu Oshin Yap Sinaga, S.P., M.Si.(0008089102)"
-    → ["Dr. Andy Darmawan, S.Si., M.Si.", "Ayu Oshin Yap Sinaga, S.P., M.Si."]
-
-    Splits by ')' since each group ends with a closing parenthesis.
-    """
     if not isinstance(text, str):
         return None
     parts = text.split(")")
@@ -61,9 +41,9 @@ def matchNames(text):
     return names if names else None
 
 def getProdi(text):
-    """Extract study program name from a raw label."""
     if text is None:
         return None
+
     text = text.lower().strip()
     text = text.replace("program studi", "").strip()
     parts = text.split("-")
@@ -73,9 +53,9 @@ def getProdi(text):
 
 
 def getFaculty(text):
-    """Map faculty abbreviation to full name."""
     if text is None:
         return None
+
     mapper = {
         "FS": "Fakultas Sains",
         "FTI": "Fakultas Teknologi Industri",
@@ -86,7 +66,6 @@ def getFaculty(text):
 
 
 def mapFacultyDegree(prodi):
-    """Map study program name to its parent faculty abbreviation."""
     if prodi is None:
         return None
 
@@ -121,7 +100,6 @@ def mapFacultyDegree(prodi):
 
 
 def normalizeDate(text):
-    """Parse date string into (day, month, year) struct."""
     if text is None:
         return (None, None, None)
 
@@ -155,28 +133,15 @@ def normalizeDate(text):
     return (None, None, None)
 
 def mapping_date(df, column):
-    """Apply date normalization to a Spark DataFrame column.
-
-    Replaces Indonesian month names, parses the date string into
-    separate day, month, and year columns.
-
-    Args:
-        df: A PySpark DataFrame.
-        column: The name of the column containing date strings.
-
-    Returns:
-        The DataFrame with three new columns: "day", "month", "year".
-    """
     for indo, eng in BULAN_MAP.items():
         df = df.withColumn(
             column,
             F.regexp_replace(F.col(column), indo, eng),
         )
 
-    df = df.withColumn("parsed", normalize_date_udf(F.col(column)))
-
     df = (
-        df.withColumn("day", F.col("parsed.day"))
+        df.withColumn("parsed", normalize_date_udf(F.col(column)))
+        .withColumn("day", F.col("parsed.day"))
         .withColumn("month", F.col("parsed.month"))
         .withColumn("year", F.col("parsed.year"))
         .drop("parsed")

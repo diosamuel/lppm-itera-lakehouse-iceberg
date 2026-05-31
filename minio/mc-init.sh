@@ -9,8 +9,6 @@ MC_ENDPOINT="${MC_ENDPOINT:-http://minio:9000}"
 MC_ROOT_USER="${MC_ROOT_USER:-${AWS_ACCESS_KEY_ID:-admin}}"
 MC_ROOT_PASS="${MC_ROOT_PASS:-${AWS_SECRET_ACCESS_KEY:-password}}"
 
-# Folder prefixes for file_proposal bucket (space-separated)
-FILE_PROPOSAL_PREFIXES="${FILE_PROPOSAL_PREFIXES:-pdf/penelitian pdf/pengabdian}"
 
 echo "[mc-init] Waiting for MinIO at ${MC_ENDPOINT}..."
 i=0
@@ -38,10 +36,14 @@ if ! /usr/bin/mc ls "${MC_ALIAS}/file_proposal" >/dev/null 2>&1; then
 fi
 /usr/bin/mc anonymous set public "${MC_ALIAS}/file_proposal" >/dev/null 2>&1 || true
 
-# Create folder-like prefixes in file_proposal
-for prefix in $FILE_PROPOSAL_PREFIXES; do
-    echo "[mc-init] Creating prefix '${prefix}/' in bucket 'file_proposal'..."
-    /usr/bin/mc cp /dev/null "${MC_ALIAS}/file_proposal/${prefix}/.keep"
-done
+echo "[mc-mb] make bucket & folder for pdf"
+/usr/bin/mc mb local/sipaper/pdf/penelitian/
+/usr/bin/mc mb local/sipaper/pdf/pengabdian/
+/usr/bin/mc mb local/sipaper/pdf/buku_keilmuan/
+
+/usr/bin/mc mb local/sipaper/csv/penelitian/
+/usr/bin/mc mb local/sipaper/csv/pengabdian/
+/usr/bin/mc mb local/sipaper/csv/sitasi/
+/usr/bin/mc mb local/sipaper/csv/buku_keilmuan/
 
 echo "[mc-init] MinIO initialization complete."

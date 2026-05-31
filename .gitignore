@@ -193,3 +193,4 @@ spark/notebooks
 data/
 minio_data/
 pdf/
+bin/

@@ -1,9 +1,12 @@
 from pyspark.sql import functions as F
 
-from pyspark.sql import functions as F
+"""
+df: Spark Dataframe
+processData: penelitian, pengabdian, buku keilmuan
+"""
 
-def staging(df):
-
+def processData(df):
+    # Infer schema & rename columns
     rename_map = {
         "No": ("no", "long"),
         "Judul Proposal": ("judul_proposal", "string"),
@@ -22,47 +25,26 @@ def staging(df):
     }
 
     existing_cols = set(df.columns)
-
     for old, (new, dtype) in rename_map.items():
         if old in existing_cols:
             df = df.withColumn(new, F.col(old).cast(dtype)).drop(old)
 
-    return df
-    
-def inferSchemaDefault(df_dict,spark,sheet_name,start_year=2021,end_year=2026):
-    spark_dfs = []
-    for tahun in range(start_year, end_year):
-        if sheet_name not in df_dict:
-            print(f"Sheet not found: {sheet_name}, skipping...")
-            continue
-        try:
-            peng = staging(spark.createDataFrame(df_dict[sheet_name]))
-            print(sheet_name, peng.count())
-            temp_df = (
-                peng
-                .withColumn("tahun", F.lit(str(tahun)))
-                .withColumn("prodi", get_prodi_udf(F.col("program_studi")))
-                .withColumn("fakultas", get_faculty_udf(F.col("program_studi")))
-                .withColumn("nim_anggota_mahasiswa", match_unique_id_udf(F.col("anggota_mahasiswa")))
-                .withColumn("name_anggota_mahasiswa", match_name_udf(F.col("anggota_mahasiswa")))
-                .withColumn("nip_anggota_dosen", match_unique_id_udf(F.col("anggota_dosen")))
-                .withColumn("name_anggota_dosen", match_name_udf(F.col("anggota_dosen")))
-            )
-            spark_dfs.append(temp_df)
-        except Exception as e:
-            print(f"Error processing {sheet_name}: {e}")
-            continue
-    if spark_dfs:
-        result = spark_dfs[0]
-        for sdf in spark_dfs[1:]:
-            result = result.unionByName(sdf)
-    else:
-        result = None
-    return result
+    # Transform
+    transformed = (
+        df.withColumn("tahun", F.lit(str(tahun)))
+        .withColumn("prodi", get_prodi_udf(F.col("program_studi")))
+        .withColumn("fakultas", get_faculty_udf(F.col("program_studi")))
+        .withColumn("nim_anggota_mahasiswa", match_unique_id_udf(F.col("anggota_mahasiswa")))
+        .withColumn("name_anggota_mahasiswa", match_name_udf(F.col("anggota_mahasiswa")))
+        .withColumn("nip_anggota_dosen", match_unique_id_udf(F.col("anggota_dosen")))
+        .withColumn("name_anggota_dosen", match_name_udf(F.col("anggota_dosen")))
+    )
+    return transformed
 
-
-def staging_sitasi(df):
-
+"""
+df: Spark Dataframe
+"""
+def processSitasiData(df):
     rename_map = {
         "No": ("no", "long"),
         "Nama Dosen": ("nama_dosen", "string"),
@@ -78,23 +60,8 @@ def staging_sitasi(df):
     }
 
     existing_cols = set(df.columns)
-
     for old, (new, dtype) in rename_map.items():
         if old in existing_cols:
             df = df.withColumn(new, F.col(f"`{old}`").cast(dtype)).drop(old)
 
     return df
-
-
-def inferSchemaSitasi(df_dict, spark, sheet_name):
-    if sheet_name not in df_dict:
-        print(f"Sheet not found: {sheet_name}, skipping...")
-        return None
-
-    try:
-        df = staging_sitasi(spark.createDataFrame(df_dict[sheet_name]))
-        print(sheet_name, df.count())
-        return df
-    except Exception as e:
-        print(f"Error processing {sheet_name}: {e}")
-        return None

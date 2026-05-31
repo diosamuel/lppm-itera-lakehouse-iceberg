@@ -6,6 +6,13 @@ import os
 load_dotenv()
 
 class MinioS3:
+    def __init__(self, endpoint_url, access_key=None, secret_key=None, bucket="lake"):
+        self.endpoint_url = endpoint_url or os.getenv("MINIO_ENDPOINT_URL", "http://localhost:9000")
+        self.access_key = access_key or os.getenv("MINIO_ACCESS_KEY", "admin")
+        self.secret_key = secret_key or os.getenv("MINIO_SECRET_KEY", "password")
+        self.bucket = bucket
+        self.client = None
+
     @staticmethod
     def check_bucket(func):
         @wraps(func)
@@ -29,13 +36,6 @@ class MinioS3:
                 kwargs["file_exists"] = False
             return func(self, filename, *args, **kwargs)
         return wrapper
-
-    def __init__(self, endpoint_url, access_key=None, secret_key=None, bucket="lake"):
-        self.endpoint_url = endpoint_url or os.getenv("MINIO_ENDPOINT_URL", "http://localhost:9000")
-        self.access_key = access_key or os.getenv("MINIO_ACCESS_KEY", "admin")
-        self.secret_key = secret_key or os.getenv("MINIO_SECRET_KEY", "password")
-        self.bucket = bucket
-        self.client = None
 
     def initialize(self):
         self.client = boto3.client(

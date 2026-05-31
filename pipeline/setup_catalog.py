@@ -3,14 +3,13 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-class SetupCatalog:
-    def __init__(self, catalog_name="lppm", namespace="default"):
+class IcebergRESTCatalog:
+    def __init__(self, catalog_name, namespace):
         self.catalog_name = catalog_name
         self.namespace = namespace
         self.catalog = None
 
-    def init(self):
-        """Initialize connection to the Iceberg REST Catalog."""
+    def init_iceberg(self):
         self.catalog = load_catalog(
             self.catalog_name,
             **{
@@ -24,21 +23,18 @@ class SetupCatalog:
         return self
 
     def create_namespace(self):
-        """Create the namespace if it doesn't exist."""
-        existing = [ns[0] for ns in self.catalog.list_namespaces()]
-        if self.namespace not in existing:
-            self.catalog.create_namespace_if_not_exists(self.namespace)
-            print(f"Namespace '{self.namespace}' created.")
-        else:
-            print(f"Namespace '{self.namespace}' already exists.")
-        return self
+        self.catalog.create_namespace_if_not_exists(self.namespace)
+        print(f"Namespace '{self.namespace}' created.")
+        return self.catalog
 
-    def create_table(self, table_name, schema=None):
+    def create_table(self, table_name, schema):
         full_name = f"{self.namespace}.{table_name}"
-
         existing_tables = [t[1] for t in self.catalog.list_tables(self.namespace)]
         if table_name in existing_tables:
             return self.catalog.load_table(full_name)
 
         table = self.catalog.create_table(full_name, schema=schema)
         return table
+
+    def get_table(self, table_name):
+        return self.catalog.load_table(f"{self.namespace}.{table_name}")
