@@ -1,9 +1,19 @@
 from pyspark.sql import functions as F
+from tools.utils_spark import (
+    get_faculty_udf,
+    get_prodi_udf,
+    map_faculty_degree_udf,
+    mapping_date,
+    match_name_udf,
+    match_unique_id_udf,
+    normalize_date_udf,
+)
 
 """
 df: Spark Dataframe
 processData: penelitian, pengabdian, buku keilmuan
 """
+
 
 def processData(df):
     # Infer schema & rename columns
@@ -34,16 +44,23 @@ def processData(df):
         df.withColumn("tahun", F.lit(str(tahun)))
         .withColumn("prodi", get_prodi_udf(F.col("program_studi")))
         .withColumn("fakultas", get_faculty_udf(F.col("program_studi")))
-        .withColumn("nim_anggota_mahasiswa", match_unique_id_udf(F.col("anggota_mahasiswa")))
-        .withColumn("name_anggota_mahasiswa", match_name_udf(F.col("anggota_mahasiswa")))
+        .withColumn(
+            "nim_anggota_mahasiswa", match_unique_id_udf(F.col("anggota_mahasiswa"))
+        )
+        .withColumn(
+            "name_anggota_mahasiswa", match_name_udf(F.col("anggota_mahasiswa"))
+        )
         .withColumn("nip_anggota_dosen", match_unique_id_udf(F.col("anggota_dosen")))
         .withColumn("name_anggota_dosen", match_name_udf(F.col("anggota_dosen")))
     )
     return transformed
 
+
 """
 df: Spark Dataframe
 """
+
+
 def processSitasiData(df):
     rename_map = {
         "No": ("no", "long"),

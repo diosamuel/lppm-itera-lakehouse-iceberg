@@ -1,15 +1,18 @@
-from pyiceberg.catalog import load_catalog
 import os
+
 from dotenv import load_dotenv
+from pyiceberg.catalog import load_catalog
+
 load_dotenv()
 
-class IcebergRESTCatalog:
+
+class SetupIcebergCatalog:
     def __init__(self, catalog_name, namespace):
         self.catalog_name = catalog_name
         self.namespace = namespace
         self.catalog = None
 
-    def init_iceberg(self):
+    def initialize(self):
         self.catalog = load_catalog(
             self.catalog_name,
             **{

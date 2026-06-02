@@ -1,23 +1,26 @@
 import io
-import pandas as pd
-from pyspark.sql import SparkSession, functions as F
-from dotenv import load_dotenv
 import os
+
+import pandas as pd
+from dotenv import load_dotenv
+from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
 from setup_minio import MinioS3
 from tools.utils_spark import (
-    match_unique_id_udf,
-    match_name_udf,
-    get_prodi_udf,
     get_faculty_udf,
+    get_prodi_udf,
     map_faculty_degree_udf,
-    normalize_date_udf,
     mapping_date,
+    match_name_udf,
+    match_unique_id_udf,
+    normalize_date_udf,
 )
 
 load_dotenv()
 
+
 class Extract:
-    def __init__(self,sparkName):
+    def __init__(self, sparkName):
         self.sparkName = sparkName
         self.df = None
         self.minio = MinioS3(
@@ -41,7 +44,8 @@ class Extract:
         """Get sheet names that start with a given prefix."""
         return [name for name in self.df.keys() if name.startswith(prefix)]
 
-class Transform():
+
+class Transform:
     def __init__(self, document_type):
         super().__init__()
         self.document_type = document_type
