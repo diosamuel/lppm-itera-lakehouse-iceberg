@@ -40,8 +40,8 @@ class WAPWorkflow:
 
     def __init__(
         self,
-        spark: SparkSession,
-        catalog: IcebergRESTCatalog,
+        spark,
+        catalog,
         namespace: str,
         table_name: str,
         catalog_name: str,

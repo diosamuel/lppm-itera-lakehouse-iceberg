@@ -7,9 +7,9 @@ load_dotenv()
 
 
 class SetupSpark:
-    def __init__(self, app_name, catalog_name):
-        self.app_name = app_name
-        self.catalog_name = catalog_name
+    def __init__(self, appname, catalog):
+        self.app_name = appname
+        self.catalog_name = catalog
 
         rest_uri = os.getenv("REST_CATALOG_URL", "http://rest:8181")
         s3_endpoint = os.getenv("MINIO_ENDPOINT_URL", "http://minio:9000")
@@ -46,7 +46,7 @@ class SetupSpark:
             .config("spark.sql.defaultCatalog", catalog)
             .getOrCreate()
         )
-        print(f"SparkSession '{self.app_name}' started — catalog: '{catalog}'")
+        print(f"SparkSession '{self.app_name}' started: catalog: '{catalog}'")
 
     def initialize(self):
         return self.spark

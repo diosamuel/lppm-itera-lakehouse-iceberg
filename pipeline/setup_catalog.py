@@ -17,16 +17,17 @@ class SetupIcebergCatalog:
             self.catalog_name,
             **{
                 "type": "rest",
-                "uri": os.getenv("REST_CATALOG_URL", "http://localhost:8181"),
-                "s3.endpoint": os.getenv("MINIO_ENDPOINT_URL", "http://localhost:9000"),
+                "uri": os.getenv("REST_CATALOG_URL", "http://rest:8181"),
+                "s3.endpoint": os.getenv("MINIO_ENDPOINT_URL", "http://minio:9000"),
                 "s3.access-key-id": os.getenv("MINIO_ACCESS_KEY", "admin"),
                 "s3.secret-access-key": os.getenv("MINIO_SECRET_KEY", "password"),
             },
         )
+        self.create_namespace()
         return self
 
-    def create_namespace(self):
-        self.catalog.create_namespace_if_not_exists(self.namespace)
+    def create_namespace(self, namespace=None):
+        self.catalog.create_namespace_if_not_exists(namespace or self.namespace)
         print(f"Namespace '{self.namespace}' created.")
         return self.catalog
 
