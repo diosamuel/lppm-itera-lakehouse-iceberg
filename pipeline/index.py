@@ -120,3 +120,18 @@ res = (
     .join()
 )
 res.writeTo("default.default.pengabdian").createOrReplace()
+
+
+# Buku Keilmuan
+[csv_buku_keilmuan_2023, csv_buku_keilmuan_2024] = [
+    StorageS3.load("csv/buku_keilmuan/2023/buku_keilmuan_2023.csv"),
+    StorageS3.load("csv/buku_keilmuan/2024/buku_keilmuan_2024.csv"),
+]
+
+res = (
+    Transform(spark=SparkSession, document_type="buku_keilmuan")
+    .processData(csv_buku_keilmuan_2023["content"], 2023)
+    .processData(csv_buku_keilmuan_2024["content"], 2024)
+    .join()
+)
+res.writeTo("default.default.buku_keilmuan").createOrReplace()
