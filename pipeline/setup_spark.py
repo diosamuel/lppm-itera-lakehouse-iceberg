@@ -18,8 +18,7 @@ class SetupSpark:
         self.spark = None
 
     def initialize(self):
-        # Must be set BEFORE getOrCreate() so the JVM child process
-        # (and the Python workers it spawns) inherit this path.
+        # input tools to spark worker
         pipeline_dir = os.path.dirname(os.path.abspath(__file__))
         existing = os.environ.get("PYTHONPATH", "")
         os.environ["PYTHONPATH"] = f"{pipeline_dir}:{existing}".rstrip(":")

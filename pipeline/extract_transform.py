@@ -8,6 +8,7 @@ from pyspark.sql import functions as F
 from tools.utils import (
     get_faculty_udf,
     get_prodi_udf,
+    map_faculty_degree_udf,
     match_name_udf,
     match_unique_id_udf,
     removeNaN_udf,
@@ -39,15 +40,21 @@ class Transform:
                 f"Expected bytes or dict, got {type(load_response).__name__}"
             )
         pdf = pd.read_csv(io.BytesIO(raw_bytes))
-        # Drop columns with empty or whitespace-only names
-        pdf = pdf.loc[:, pdf.columns.str.strip().astype(bool)]
+        # Drop columns with empty/whitespace-only names or pandas auto-index artifacts ("Unnamed: N")
+        pdf = pdf.loc[
+            :,
+            pdf.columns.str.strip().astype(bool)
+            & ~pdf.columns.str.match(r"^Unnamed: \d+$"),
+        ]
         return self.spark.createDataFrame(pdf)
 
     def processData(self, df, tahun):
-        df = self.toSparkDF(df)
+        """
+        df = raw CSV bytes or StorageS3.load() response dict
+        """
+        spark_df = self.toSparkDF(df)
         # Infer schema & rename columns
         rename_map = {
-            "No": ("no", "long"),
             "Judul Proposal": ("judul_proposal", "string"),
             "Ketua Peneliti": ("ketua_peneliti", "string"),
             "Jenis": ("jenis", "string"),
@@ -63,17 +70,16 @@ class Transform:
             "Status Proposal": ("status_proposal", "string"),
         }
 
-        existing_cols = set(df.columns)
         for old, (new, dtype) in rename_map.items():
-            if old in existing_cols:
-                casted = F.col(f"`{old}`").cast(dtype)
-                cleaned = removeNaN_udf(casted) if dtype == "string" else casted
-                print(new, cleaned)
-                df = df.withColumn(new, cleaned).drop(old)
+            if old in spark_df.columns:
+                spark_df = spark_df.withColumnRenamed(old, new)
+                if dtype == "string":
+                    spark_df = spark_df.withColumn(new, removeNaN_udf(F.col(new)))
+        spark_df = spark_df.drop("No")
 
         # Transform
         transformed = (
-            df.withColumn("tahun", F.lit(str(tahun)))
+            spark_df.withColumn("tahun", F.lit(str(tahun)))
             .withColumn("prodi", get_prodi_udf(F.col("program_studi")))
             .withColumn("fakultas", get_faculty_udf(F.col("program_studi")))
             .withColumn(
@@ -93,9 +99,9 @@ class Transform:
         return self
 
     def processSitasiData(self, df, tahun):
-        df = self.toSparkDF(df)
+        spark_df = self.toSparkDF(df)
+        print(spark_df.columns)
         rename_map = {
-            "No": ("no", "long"),
             "Nama Dosen": ("nama_dosen", "string"),
             "Nama Prodi": ("nama_prodi", "string"),
             "Fakultas": ("fakultas", "string"),
@@ -108,24 +114,18 @@ class Transform:
             "DOI": ("doi", "string"),
         }
 
-        existing_cols = set(df.columns)
         for old, (new, dtype) in rename_map.items():
-            if old in existing_cols:
-                df = df.withColumn(new, F.col(f"`{old}`").cast(dtype)).drop(old)
+            if old in spark_df.columns:
+                spark_df = spark_df.withColumnRenamed(old, new)
+                if dtype == "string":
+                    spark_df = spark_df.withColumn(new, removeNaN_udf(F.col(new)))
 
-        self._batches.append(df)
+        spark_df = spark_df.drop("No").withColumn(
+            "fakultas", map_faculty_degree_udf(F.lower(F.col("nama_prodi")))
+        )
+
+        self._batches.append(spark_df)
         return self
-
-    def cleanData(self, df, tahun):
-        if (
-            self.document_type == "penelitian"
-            or self.document_type == "pengabdian"
-            or self.document_type == "buku_keilmuan"
-        ):
-            df = self.processData(df, tahun)
-        elif self.document_type == "sitasi":
-            df = self.processSitasiData(df, tahun)
-        return df
 
     def join(self):
         """Union all accumulated batches into a single DataFrame and reset state."""

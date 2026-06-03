@@ -101,7 +101,6 @@ class SetupMinioS3:
                 "message": f"File '{filename}' does not exist in bucket '{self.bucket}'.",
             }
         response = self.client.head_object(Bucket=self.bucket, Key=filename)
-        print(response)
         metadata = {
             "content_type": response.get("ContentType"),
             "content_length": response.get("ContentLength"),

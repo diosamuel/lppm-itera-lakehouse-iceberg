@@ -43,7 +43,6 @@ for file in list_directory:
     if file.endswith(".csv"):
         research_type = file.rsplit("_", 1)[0]
         year = file.rsplit("_", 1)[1].split(".")[0]
-        print(research_type)
         file_endpoint = None
         if research_type == "penelitian":
             file_endpoint = f"/csv/penelitian/{year}/{file}"
@@ -68,7 +67,7 @@ penelitian = IcebergCatalog.create_table("penelitian", default_schema)
 pengabdian = IcebergCatalog.create_table("pengabdian", default_schema)
 sitasi = IcebergCatalog.create_table("sitasi", sitasi_schema)
 
-# Peneilitian
+# Penelitian
 [
     csv_penelitian_2021,
     csv_penelitian_2022,
@@ -111,15 +110,18 @@ res.writeTo("default.default.penelitian").createOrReplace()
 ]
 
 res = (
-    Transform(spark=SparkSession, document_type="pengabdian")
-    .processData(csv_pengabdian_2021["content"], 2021)
-    .processData(csv_pengabdian_2022["content"], 2022)
-    .processData(csv_pengabdian_2023["content"], 2023)
-    .processData(csv_pengabdian_2024["content"], 2024)
-    .processData(csv_pengabdian_2025["content"], 2025)
-    .join()
+    (
+        Transform(spark=SparkSession, document_type="pengabdian")
+        .processData(csv_pengabdian_2021["content"], 2021)
+        .processData(csv_pengabdian_2022["content"], 2022)
+        .processData(csv_pengabdian_2023["content"], 2023)
+        .processData(csv_pengabdian_2024["content"], 2024)
+        .processData(csv_pengabdian_2025["content"], 2025)
+        .join()
+    )
+    .writeTo("default.default.pengabdian")
+    .createOrReplace()
 )
-res.writeTo("default.default.pengabdian").createOrReplace()
 
 
 # Buku Keilmuan
@@ -129,12 +131,15 @@ res.writeTo("default.default.pengabdian").createOrReplace()
 ]
 
 res = (
-    Transform(spark=SparkSession, document_type="buku_keilmuan")
-    .processData(csv_buku_keilmuan_2023["content"], 2023)
-    .processData(csv_buku_keilmuan_2024["content"], 2024)
-    .join()
+    (
+        Transform(spark=SparkSession, document_type="buku_keilmuan")
+        .processData(csv_buku_keilmuan_2023["content"], 2023)
+        .processData(csv_buku_keilmuan_2024["content"], 2024)
+        .join()
+    )
+    .writeTo("default.default.buku_keilmuan")
+    .createOrReplace()
 )
-res.writeTo("default.default.buku_keilmuan").createOrReplace()
 
 # Sitasi
 [csv_sitasi_2026] = [
@@ -142,8 +147,11 @@ res.writeTo("default.default.buku_keilmuan").createOrReplace()
 ]
 
 res = (
-    Transform(spark=SparkSession, document_type="sitasi")
-    .processSitasiData(csv_sitasi_2026["content"], 2026)
-    .join()
+    (
+        Transform(spark=SparkSession, document_type="sitasi")
+        .processSitasiData(csv_sitasi_2026["content"], 2026)
+        .join()
+    )
+    .writeTo("default.default.sitasi")
+    .createOrReplace()
 )
-res.writeTo("default.default.sitasi").createOrReplace()
