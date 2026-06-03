@@ -1,5 +1,6 @@
 import os
 
+import pyarrow.csv as pv
 from dotenv import load_dotenv
 from pyiceberg.catalog import load_catalog
 

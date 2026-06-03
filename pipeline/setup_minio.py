@@ -58,12 +58,12 @@ class SetupMinioS3:
     def upload(self, filename, filepath, bucket_exists=False, file_exists=False):
         if not bucket_exists:
             return {
-                "status": "error",
+                "status": False,
                 "message": f"Bucket '{self.bucket}' does not exist.",
             }
 
         if file_exists:
-            return {"status": "error", "message": "file exists"}
+            return {"status": False, "message": "file exists"}
         self.client.upload_file(filepath, self.bucket, filename)
         return {"status": "success", "bucket": self.bucket, "key": filename}
 
@@ -72,29 +72,32 @@ class SetupMinioS3:
     def load(self, filename, bucket_exists=False, file_exists=False):
         if not bucket_exists:
             return {
-                "status": "error",
+                "status": False,
                 "message": f"Bucket '{self.bucket}' does not exist.",
             }
         if not file_exists:
             return {
-                "status": "error",
+                "status": False,
                 "message": f"File '{filename}' does not exist in bucket '{self.bucket}'.",
             }
         response = self.client.get_object(Bucket=self.bucket, Key=filename)
         content = response["Body"].read()
-        return content
+        return {
+            "status": True,
+            "content": content,
+        }
 
     @check_bucket
     @check_file
     def read_meta(self, filename, bucket_exists=False, file_exists=False):
         if not bucket_exists:
             return {
-                "status": "error",
+                "status": False,
                 "message": f"Bucket '{self.bucket}' does not exist.",
             }
         if not file_exists:
             return {
-                "status": "error",
+                "status": False,
                 "message": f"File '{filename}' does not exist in bucket '{self.bucket}'.",
             }
         response = self.client.head_object(Bucket=self.bucket, Key=filename)
@@ -112,7 +115,7 @@ class SetupMinioS3:
     def list_file(self, bucket_exists):
         if not bucket_exists:
             return {
-                "status": "error",
+                "status": False,
                 "message": f"Bucket '{self.bucket}' does not exist.",
             }
 

@@ -91,14 +91,7 @@ class WAPWorkflow:
         self.wap_snapshot_id = wap_row
         return self.wap_snapshot_id
 
-    def audit_transform(self, column_name: str, default_value=None) -> bool:
-        """
-        Check if `column_name` exists in the staged WAP snapshot.
-        If missing, add the column (filled with `default_value`) and re-stage
-        by overwriting the branch — WAP id remains active so the new write
-        still targets the staging area, not the main branch.
-        Returns True after the check/transform completes.
-        """
+    def audit_transform(self, column_name: str, default_value=None):
         if self.wap_snapshot_id is None:
             self.get_wap_snapshot()
 
