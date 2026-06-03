@@ -11,13 +11,14 @@ from schema.listSchema import default_schema, default_schema_enrichment, sitasi_
 from setup_catalog import SetupIcebergCatalog
 from setup_minio import SetupMinioS3
 from setup_spark import SetupSpark
-from tools.utils_spark import (
-    get_faculty_udf,
-    get_prodi_udf,
-    map_faculty_degree_udf,
-    match_name_udf,
-    match_unique_id_udf,
-)
+
+# from tools.utils_spark import (
+#     get_faculty_udf,
+#     get_prodi_udf,
+#     map_faculty_degree_udf,
+#     match_name_udf,
+#     match_unique_id_udf,
+# )
 from write_audit_publish import WAPWorkflow
 
 # Initialize storage and catalog
@@ -92,8 +93,30 @@ res = (
     .processData(csv_penelitian_2025["content"], 2025)
     .join()
 )
+res.writeTo("default.default.penelitian").createOrReplace()
 
-penelitianTable = IcebergCatalog.get_table("penelitian")
-penelitianTable.catalog.overwrite(res)
+# Pengabdian
+[
+    csv_pengabdian_2021,
+    csv_pengabdian_2022,
+    csv_pengabdian_2023,
+    csv_pengabdian_2024,
+    csv_pengabdian_2025,
+] = [
+    StorageS3.load("csv/pengabdian/2021/pengabdian_2021.csv"),
+    StorageS3.load("csv/pengabdian/2022/pengabdian_2022.csv"),
+    StorageS3.load("csv/pengabdian/2023/pengabdian_2023.csv"),
+    StorageS3.load("csv/pengabdian/2024/pengabdian_2024.csv"),
+    StorageS3.load("csv/pengabdian/2025/pengabdian_2025.csv"),
+]
 
-print(res.toPandas())
+res = (
+    Transform(spark=SparkSession, document_type="pengabdian")
+    .processData(csv_pengabdian_2021["content"], 2021)
+    .processData(csv_pengabdian_2022["content"], 2022)
+    .processData(csv_pengabdian_2023["content"], 2023)
+    .processData(csv_pengabdian_2024["content"], 2024)
+    .processData(csv_pengabdian_2025["content"], 2025)
+    .join()
+)
+res.writeTo("default.default.pengabdian").createOrReplace()

@@ -13,6 +13,7 @@ from tools.utils_spark import (
     match_name_udf,
     match_unique_id_udf,
     normalize_date_udf,
+    removeNaN_udf,
 )
 
 load_dotenv()
@@ -68,7 +69,9 @@ class Transform:
         existing_cols = set(df.columns)
         for old, (new, dtype) in rename_map.items():
             if old in existing_cols:
-                df = df.withColumn(new, F.col(f"`{old}`").cast(dtype)).drop(old)
+                casted = F.col(f"`{old}`").cast(dtype)
+                cleaned = removeNaN_udf(casted) if dtype == "string" else casted
+                df = df.withColumn(new, cleaned).drop(old)
 
         # Transform
         transformed = (
@@ -85,12 +88,14 @@ class Transform:
                 "nip_anggota_dosen", match_unique_id_udf(F.col("anggota_dosen"))
             )
             .withColumn("name_anggota_dosen", match_name_udf(F.col("anggota_dosen")))
+            .replace(float("nan"), None)
+            .replace("", None)
         )
         self._batches.append(transformed)
         return self
 
     def processSitasiData(self, df, tahun):
-        df = self._load_to_spark_df(df)
+        df = self.toSparkDF(df)
         rename_map = {
             "No": ("no", "long"),
             "Nama Dosen": ("nama_dosen", "string"),

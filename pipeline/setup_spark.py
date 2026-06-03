@@ -18,6 +18,12 @@ class SetupSpark:
         self.spark = None
 
     def initialize(self):
+        # Must be set BEFORE getOrCreate() so the JVM child process
+        # (and the Python workers it spawns) inherit this path.
+        pipeline_dir = os.path.dirname(os.path.abspath(__file__))
+        existing = os.environ.get("PYTHONPATH", "")
+        os.environ["PYTHONPATH"] = f"{pipeline_dir}:{existing}".rstrip(":")
+
         self.spark = (
             SparkSession.builder.appName(self.app_name)
             # Iceberg Spark
@@ -49,6 +55,8 @@ class SetupSpark:
             .config("spark.hadoop.fs.s3a.path.style.access", "true")
             # Default catalog
             .config("spark.sql.defaultCatalog", self.catalog_name)
+            # Make pipeline modules importable inside UDFs on every worker
+            .config("spark.executorEnv.PYTHONPATH", pipeline_dir)
             .getOrCreate()
         )
         print(f"SparkSession '{self.app_name}' started: catalog: '{self.catalog_name}'")

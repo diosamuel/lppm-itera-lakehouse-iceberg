@@ -1,34 +1,77 @@
 import re
+
 from pyspark.sql import functions as F
 from pyspark.sql.types import (
     ArrayType,
-    StringType,
-    StructType,
-    StructField,
     IntegerType,
+    StringType,
+    StructField,
+    StructType,
 )
+
+
+def removeNaN(value):
+    """Return None for NaN floats, empty strings, and null-like sentinel strings."""
+    empty_char = {"", "nan", "none", "null", "n/a", "na", "-"}
+    if value is None:
+        return None
+    if isinstance(value, float) and value != value:  # float NaN != NaN is always True
+        return None
+    if isinstance(value, str) and value.strip().lower() in empty_char:
+        return None
+    return value
+
+
 MONTH_MAP = {
-    "januari": 1, "februari": 2, "maret": 3, "april": 4,
-    "mei": 5, "juni": 6, "juli": 7, "agustus": 8,
-    "september": 9, "oktober": 10, "november": 11, "desember": 12,
-    "january": 1, "february": 2, "march": 3, "may": 5,
-    "june": 6, "july": 7, "august": 8, "october": 10, "december": 12,
+    "januari": 1,
+    "februari": 2,
+    "maret": 3,
+    "april": 4,
+    "mei": 5,
+    "juni": 6,
+    "juli": 7,
+    "agustus": 8,
+    "september": 9,
+    "oktober": 10,
+    "november": 11,
+    "desember": 12,
+    "january": 1,
+    "february": 2,
+    "march": 3,
+    "may": 5,
+    "june": 6,
+    "july": 7,
+    "august": 8,
+    "october": 10,
+    "december": 12,
 }
 
 BULAN_MAP = {
-    "januari": "january", "februari": "february", "maret": "march",
-    "april": "april", "mei": "may", "juni": "june",
-    "juli": "july", "agustus": "august", "september": "september",
-    "oktober": "october", "november": "november", "desember": "december",
+    "januari": "january",
+    "februari": "february",
+    "maret": "march",
+    "april": "april",
+    "mei": "may",
+    "juni": "june",
+    "juli": "july",
+    "agustus": "august",
+    "september": "september",
+    "oktober": "october",
+    "november": "november",
+    "desember": "december",
 }
 
+
 def matchUniqueID(text):
+    text = removeNaN(text)
     if isinstance(text, str):
-        result = re.findall(r'\((\d+)\)', text)
+        result = re.findall(r"\((\d+)\)", text)
         return result or None
     return None
 
+
 def matchNames(text):
+    text = removeNaN(text)
     if not isinstance(text, str):
         return None
     parts = text.split(")")
@@ -40,7 +83,9 @@ def matchNames(text):
             names.append(name)
     return names if names else None
 
+
 def getProdi(text):
+    text = removeNaN(text)
     if text is None:
         return None
 
@@ -53,6 +98,7 @@ def getProdi(text):
 
 
 def getFaculty(text):
+    text = removeNaN(text)
     if text is None:
         return None
 
@@ -66,30 +112,58 @@ def getFaculty(text):
 
 
 def mapFacultyDegree(prodi):
+    prodi = removeNaN(prodi)
     if prodi is None:
         return None
 
     mapper = {
         "FS": [
-            "biologi", "fisika", "sains lingkungan kelautan",
-            "sains atmosfer dan keplanetan", "sap", "sains data",
-            "farmasi", "kimia", "aktuaria", "sains aktuaria", "matematika",
+            "biologi",
+            "fisika",
+            "sains lingkungan kelautan",
+            "sains atmosfer dan keplanetan",
+            "sap",
+            "sains data",
+            "farmasi",
+            "kimia",
+            "aktuaria",
+            "sains aktuaria",
+            "matematika",
         ],
         "FTI": [
-            "teknik pertambangan", "teknik elektro", "teknik informatika",
-            "teknik kimia", "teknologi pangan", "teknik geologi",
-            "rekayasa kosmetik", "teknik material", "teknik biosistem",
-            "teknik biomedis", "teknik fisika", "teknik geofisika",
-            "teknologi industri pertanian", "teknik industri",
-            "rekayasa keolahragaan", "teknik mesin", "teknik sistem energi",
-            "rekayasa kehutanan", "rekayasa instrumentasi dan automasi",
+            "teknik pertambangan",
+            "teknik elektro",
+            "teknik informatika",
+            "teknik kimia",
+            "teknologi pangan",
+            "teknik geologi",
+            "rekayasa kosmetik",
+            "teknik material",
+            "teknik biosistem",
+            "teknik biomedis",
+            "teknik fisika",
+            "teknik geofisika",
+            "teknologi industri pertanian",
+            "teknik industri",
+            "rekayasa keolahragaan",
+            "teknik mesin",
+            "teknik sistem energi",
+            "rekayasa kehutanan",
+            "rekayasa instrumentasi dan automasi",
             "rekayasa minyak dan gas",
         ],
         "FTIK": [
-            "perencanaan wilayah dan kota", "teknik sipil", "arsitektur",
-            "arsitektur lanskap", "teknik lingkungan", "teknik geomatika",
-            "teknik perkeretaapian", "desain komunikasi visual",
-            "rekayasa tata kelola air terpadu", "pariwisata","teknik kelautan"
+            "perencanaan wilayah dan kota",
+            "teknik sipil",
+            "arsitektur",
+            "arsitektur lanskap",
+            "teknik lingkungan",
+            "teknik geomatika",
+            "teknik perkeretaapian",
+            "desain komunikasi visual",
+            "rekayasa tata kelola air terpadu",
+            "pariwisata",
+            "teknik kelautan",
         ],
     }
 
@@ -100,6 +174,7 @@ def mapFacultyDegree(prodi):
 
 
 def normalizeDate(text):
+    text = removeNaN(text)
     if text is None:
         return (None, None, None)
 
@@ -132,6 +207,7 @@ def normalizeDate(text):
 
     return (None, None, None)
 
+
 def mapping_date(df, column):
     for indo, eng in BULAN_MAP.items():
         df = df.withColumn(
@@ -149,17 +225,21 @@ def mapping_date(df, column):
 
     return df
 
+
 # user define function spark
+removeNaN_udf = F.udf(removeNaN, StringType())
 match_unique_id_udf = F.udf(matchUniqueID, ArrayType(StringType()))
 match_name_udf = F.udf(matchNames, ArrayType(StringType()))
 get_prodi_udf = F.udf(getProdi, StringType())
 get_faculty_udf = F.udf(getFaculty, StringType())
 map_faculty_degree_udf = F.udf(mapFacultyDegree, StringType())
 
-normalizeDateSchema = StructType([
-    StructField("day", IntegerType(), True),
-    StructField("month", IntegerType(), True),
-    StructField("year", IntegerType(), True),
-])
+normalizeDateSchema = StructType(
+    [
+        StructField("day", IntegerType(), True),
+        StructField("month", IntegerType(), True),
+        StructField("year", IntegerType(), True),
+    ]
+)
 
 normalize_date_udf = F.udf(normalizeDate, normalizeDateSchema)
