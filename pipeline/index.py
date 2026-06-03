@@ -135,3 +135,15 @@ res = (
     .join()
 )
 res.writeTo("default.default.buku_keilmuan").createOrReplace()
+
+# Sitasi
+[csv_sitasi_2026] = [
+    StorageS3.load("csv/sitasi/2026/sitasi_2026.csv"),
+]
+
+res = (
+    Transform(spark=SparkSession, document_type="sitasi")
+    .processSitasiData(csv_sitasi_2026["content"], 2026)
+    .join()
+)
+res.writeTo("default.default.sitasi").createOrReplace()

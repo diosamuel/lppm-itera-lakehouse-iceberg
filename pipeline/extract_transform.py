@@ -5,14 +5,11 @@ import pandas as pd
 from dotenv import load_dotenv
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from tools.utils_spark import (
+from tools.utils import (
     get_faculty_udf,
     get_prodi_udf,
-    map_faculty_degree_udf,
-    mapping_date,
     match_name_udf,
     match_unique_id_udf,
-    normalize_date_udf,
     removeNaN_udf,
 )
 
@@ -71,6 +68,7 @@ class Transform:
             if old in existing_cols:
                 casted = F.col(f"`{old}`").cast(dtype)
                 cleaned = removeNaN_udf(casted) if dtype == "string" else casted
+                print(new, cleaned)
                 df = df.withColumn(new, cleaned).drop(old)
 
         # Transform
