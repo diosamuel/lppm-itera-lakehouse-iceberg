@@ -15,20 +15,18 @@
 # specific language governing permissions and limitations
 # under the License.
 ---
-x-airflow-common:
-  &airflow-common
+x-airflow-common: &airflow-common
   image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.9.1}
-  environment:
-    &airflow-common-env
+  environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@shared-postgres/airflow
-    AIRFLOW__CORE__FERNET_KEY: ''
-    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__FERNET_KEY: ""
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
     # AIRFLOW__CORE__LOAD_EXAMPLES: 'true'
-    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
-    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session"
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
-    AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+    AIRFLOW_CONFIG: "/opt/airflow/config/airflow.cfg"
   volumes:
     - ./airflow/dags:/opt/airflow/dags
     - ./airflow/logs:/opt/airflow/logs
@@ -37,14 +35,11 @@ x-airflow-common:
   user: "${AIRFLOW_UID:-50000}:0"
   networks:
     iceberg_net:
-  depends_on:
-    &airflow-common-depends-on
+  depends_on: &airflow-common-depends-on
     shared-postgres:
       condition: service_healthy
 
 services:
-
-  
   shared-postgres:
     image: postgres:15
     container_name: lppm-postgres
@@ -65,7 +60,6 @@ services:
     networks:
       iceberg_net:
 
-  
   spark-iceberg:
     image: tabulario/spark-iceberg
     container_name: lppm-spark-iceberg
@@ -105,7 +99,6 @@ services:
       - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
       - CATALOG_S3_ENDPOINT=http://minio:9000
 
-  
   minio:
     image: minio/minio
     container_name: lppm-minio
@@ -139,7 +132,6 @@ services:
       - ./minio/mc-init.sh:/mc-init.sh
     entrypoint: ["/bin/sh", "/mc-init.sh"]
 
-  
   superset-redis:
     image: redis:7.2-bookworm
     container_name: lppm-superset-redis
@@ -187,7 +179,19 @@ services:
     networks:
       iceberg_net:
 
-  
+  trino:
+    container_name: lppm-trino
+    image: trinodb/trino:426
+    volumes:
+      - ./trino/etc:/etc/trino
+    ports:
+      - "8085:8085"
+    depends_on:
+      - rest
+      - minio
+    networks:
+      iceberg_net:
+
   airflow-webserver:
     <<: *airflow-common
     container_name: lppm-airflow-webserver
@@ -231,11 +235,11 @@ services:
     environment:
       <<: *airflow-common-env
       AIRFLOW_UID: ${AIRFLOW_UID:-50000}
-      _AIRFLOW_DB_MIGRATE: 'true'
-      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
       _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
       _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
-      _PIP_ADDITIONAL_REQUIREMENTS: ''
+      _PIP_ADDITIONAL_REQUIREMENTS: ""
     user: "0:0"
 
   airflow-cli:

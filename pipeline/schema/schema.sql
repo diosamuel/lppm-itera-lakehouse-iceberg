@@ -53,3 +53,5 @@ CREATE TABLE IF NOT EXISTS sitasi_schema (
     publikasi       STRING,
     doi             STRING
 );
+
+CREATE gold.

@@ -11,25 +11,18 @@ A local data lakehouse for organizing research paper data, built on **Apache Ice
 | Iceberg REST      | http://localhost:8181        | —                   |
 | MinIO Console     | http://localhost:9001        | `admin` / `password`|
 | Superset          | http://localhost:8088        | `admin` / `admin`   |
+| Superset Connection | http://localhost:8088      | hive://spark-iceberg:10000 |
 | Airflow Webserver | http://localhost:8082        | `airflow` / `airflow` |
 
 ## Prerequisites
 
-- Docker Desktop (or Docker Engine + Compose v2)
+- Docker Engine
 - Minimum 8 GB RAM free for the stack
-- On Windows: WSL2 backend recommended      
 
 ## Quick start
 
 ```bash
 docker compose up -d
-```
-
-First run takes a few minutes (image builds + DB migrations). Watch progress with:
-
-```bash
-docker compose ps
-docker compose logs -f airflow-init superset-init
 ```
 
 Tear it down (preserving volumes):
@@ -71,12 +64,4 @@ Run an Airflow CLI command:
 
 ```bash
 docker compose --profile debug run --rm airflow-cli airflow dags list
-```
-
-Reset Superset metadata only:
-
-```bash
-docker compose down
-docker volume rm lppm-itera-lakehouse-iceberg_superset-db-data
-docker compose up -d
 ```

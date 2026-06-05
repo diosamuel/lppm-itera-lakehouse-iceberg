@@ -7,4 +7,5 @@ requires-python = ">=3.12"
 dependencies = [
     "boto3>=1.43.15",
     "python-dotenv>=1.2.2",
+    "trino>=0.330.0",
 ]

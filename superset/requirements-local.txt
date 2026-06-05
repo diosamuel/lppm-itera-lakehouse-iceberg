@@ -5,3 +5,5 @@ redis==4.6.0
 PyHive[hive]==0.7.0
 thrift==0.16.0
 thrift-sasl==0.4.3
+# Trino SQLAlchemy driver — required for TrinoEngineSpec in Superset
+trino[sqlalchemy]==0.326.0
