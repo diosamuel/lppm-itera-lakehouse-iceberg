@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 from pyspark.sql import functions as F
 from pyspark.sql.types import (
@@ -93,7 +94,7 @@ def getProdi(text):
     text = text.replace("program studi", "").strip()
     parts = text.split("-")
     if len(parts) > 1:
-        return parts[1].strip()
+        return parts[1].strip().upper()
     return text
 
 
@@ -169,7 +170,7 @@ def mapFacultyDegree(prodi):
 
     for key, programs in mapper.items():
         if prodi in programs:
-            return key
+            return key.upper()
     return None
 
 
@@ -225,6 +226,62 @@ def mapping_date(df, column):
 
     return df
 
+def cleanScope(text):
+    handle = {
+        "LAIN - LAIN": "LAIN-LAIN",
+    }
+
+    if text is None:
+        return None
+
+    text_clean = text.upper().strip()
+    text_clean = handle.get(text_clean, text_clean)
+    return text_clean
+
+
+def cleanTanggal(text):
+    text = removeNaN(text)
+    result = {"tanggal": 0, "bulan": 0, "tahun": 0}
+    if text is None:
+        return result
+
+    text = str(text).strip().lower()
+
+    match = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})$", text)
+    if match:
+        year = int(match.group(1))
+        month = int(match.group(2))
+        day = int(match.group(3))
+        try:
+            datetime(year, month, day)
+        except ValueError:
+            return result
+        return {"tanggal": day, "bulan": month, "tahun": year}
+
+    match = re.match(r"^(\d{1,2})\s+([a-z]+)\s+(\d{4})$", text)
+    if match:
+        day = int(match.group(1))
+        month = MONTH_MAP.get(match.group(2), 0)
+        year = int(match.group(3))
+        if month == 0:
+            return result
+        try:
+            datetime(year, month, day)
+        except ValueError:
+            return result
+        return {"tanggal": day, "bulan": month, "tahun": year}
+
+    match = re.match(r"^([a-z]+)\s+(\d{4})$", text)
+    if match:
+        month = MONTH_MAP.get(match.group(1), 0)
+        year = int(match.group(2))
+        return {"tanggal": 0, "bulan": month, "tahun": year}
+
+    match = re.match(r"^\d{4}$", text)
+    if match:
+        return {"tanggal": 0, "bulan": 0, "tahun": int(text)}
+
+    return result
 
 # user define function spark
 removeNaN_udf = F.udf(removeNaN, StringType())
@@ -233,6 +290,15 @@ match_name_udf = F.udf(matchNames, ArrayType(StringType()))
 get_prodi_udf = F.udf(getProdi, StringType())
 get_faculty_udf = F.udf(getFaculty, StringType())
 map_faculty_degree_udf = F.udf(mapFacultyDegree, StringType())
+clean_scope_udf = F.udf(cleanScope,StringType())
+
+cleanTanggalSchema = StructType(
+    [
+        StructField("tanggal", IntegerType(), True),
+        StructField("bulan", IntegerType(), True),
+        StructField("tahun", IntegerType(), True),
+    ]
+)
 
 normalizeDateSchema = StructType(
     [
@@ -243,3 +309,4 @@ normalizeDateSchema = StructType(
 )
 
 normalize_date_udf = F.udf(normalizeDate, normalizeDateSchema)
+clean_tanggal_udf = F.udf(cleanTanggal, cleanTanggalSchema)
