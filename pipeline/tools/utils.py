@@ -89,8 +89,17 @@ BULAN_MAP = {
 def matchUniqueID(text):
     text = removeNaN(text)
     if isinstance(text, str):
-        result = re.findall(r"\((\d+)\)", text)
-        return result or None
+        # Find all parentheses groups
+        groups = re.findall(r'\(([^)]*)\)', text)
+        # For each group, if it's digits, keep it; else if empty, use '0'; else skip
+        result = []
+        for g in groups:
+            if g.isdigit():
+                result.append(g)
+            elif g == '':
+                result.append('0')
+            # else: skip non-digit non-empty parentheses
+        return result if result else None
     return None
 
 
@@ -98,11 +107,19 @@ def matchNames(text):
     text = removeNaN(text)
     if not isinstance(text, str):
         return None
-    parts = text.split(")")
+    all_groups = list(re.finditer(r'\(([^)]*)\)', text))
+    if not all_groups:
+        name = standarizingNamaDosen(text.strip())
+        return [name] if name else None
+    id_groups = [m for m in all_groups if m.group(1).isdigit() or m.group(1) == '']
+    if not id_groups:
+        name = standarizingNamaDosen(text.strip())
+        return [name] if name else None
     names = []
-    for p in parts:
-        name = re.sub(r"\(.*", "", p).strip()
-        name = name.strip(",; ").strip()
+    for i, match in enumerate(id_groups):
+        before = text[:match.start()] if i == 0 else text[id_groups[i - 1].end():match.start()]
+        name = before.strip().strip(',;').strip()
+        name = standarizingNamaDosen(name)
         if name:
             names.append(name)
     return names if names else None
@@ -323,6 +340,14 @@ def standarizingJournal(text):
 
 def standarizingNamaDosen(text):
     text = removeNaN(text)
+    if text is None:
+        return None
+    text = str(text).strip()
+    if text and not text.endswith('.'):
+        text = text + '.'
+    return text or None
+
+
 # user define function spark
 removeNaN_udf = F.udf(removeNaN, StringType())
 match_unique_id_udf = F.udf(matchUniqueID, ArrayType(StringType()))

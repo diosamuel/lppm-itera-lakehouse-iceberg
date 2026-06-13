@@ -1,6 +1,5 @@
 import io
 import os
-
 import pandas as pd
 from dotenv import load_dotenv
 from pyspark.sql import SparkSession
@@ -16,14 +15,7 @@ from tools.utils import (
     capture_doi_udf,
     standarizing_journal_udf,
 )
-
 load_dotenv()
-
-"""
-Transform returned Spark DataFrame
-"""
-
-
 class Transform:
     def __init__(self, spark, document_type):
         self.spark = spark
@@ -85,6 +77,8 @@ class Transform:
             spark_df.withColumn("tahun", F.lit(str(tahun)))
             .withColumn("prodi", get_prodi_udf(F.col("program_studi")))
             .withColumn("fakultas", get_faculty_udf(F.col("program_studi")))
+            .withColumn("ketua_peneliti",match_name_udf(F.col("ketua_peneliti"))[0])
+            .withColumn("nip_ketua_peneliti",match_unique_id_udf(F.col("ketua_peneliti")))
             .withColumn("nim_anggota_mahasiswa", match_unique_id_udf(F.col("anggota_mahasiswa")))
             .withColumn("nama_anggota_mahasiswa", match_name_udf(F.col("anggota_mahasiswa")))
             .withColumn("nip_anggota_dosen", match_unique_id_udf(F.col("anggota_dosen")))
@@ -97,7 +91,6 @@ class Transform:
 
     def processSitasiData(self, df, tahun):
         spark_df = self.toSparkDF(df)
-        print(spark_df.columns)
         rename_map = {
             "Nama Dosen": ("nama_dosen", "string"),
             "Nama Prodi": ("nama_prodi", "string"),
@@ -119,20 +112,22 @@ class Transform:
 
         spark_df = (
             spark_df.drop("No")
+            .withColumn("ketua_peneliti",match_name_udf(F.col("nama_dosen"))[0])
             .withColumn("fakultas", map_faculty_degree_udf(F.lower(F.col("nama_prodi"))))
             .withColumn("_tanggal_terbit", clean_tanggal_udf(F.col("tanggal_terbit")))
             .withColumn("tanggal_terbit_hari", F.col("_tanggal_terbit.tanggal"))
             .withColumn("tanggal_terbit_bulan", F.col("_tanggal_terbit.bulan"))
             .withColumn("tanggal_terbit_tahun", F.col("_tanggal_terbit.tahun"))
             .withColumn("tanggal_terbit_timestamp", F.col("_tanggal_terbit.timestamp"))
-            .drop("_tanggal_terbit")
             .withColumn("doi",capture_doi_udf(F.col("doi")))
             .withColumn("_journal", standarizing_journal_udf(F.col("kategori")))
             .withColumn("jurnal", F.col("_journal.jurnal"))
             .withColumn("jurnal_kategori", F.col("_journal.groups"))
             .drop("_journal")
             .drop("kategori")
+            .drop("_tanggal_terbit")
             .drop("tanggal_terbit")
+            .drop("nama_dosen")
         )
 
         self._batches.append(spark_df)
