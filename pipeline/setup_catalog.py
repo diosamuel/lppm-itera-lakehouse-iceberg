@@ -1,12 +1,9 @@
 import os
-
 import pyarrow.csv as pv
 from dotenv import load_dotenv
 from pyiceberg.catalog import load_catalog
 from pyiceberg.exceptions import NoSuchTableError
-
 load_dotenv()
-
 
 class SetupIcebergCatalog:
     def __init__(self, catalog_name, namespace):
@@ -40,10 +37,8 @@ class SetupIcebergCatalog:
             try:
                 return self.catalog.load_table(full_name)
             except NoSuchTableError:
-                # Catalog entry exists but S3 metadata file is gone (zombie table).
-                # Drop the stale entry so we can recreate it cleanly.
                 print(
-                    f"[warn] '{full_name}' metadata missing on S3 — dropping stale catalog entry and recreating."
+                    f"drop '{full_name}'"
                 )
                 self.catalog.drop_table(full_name)
 

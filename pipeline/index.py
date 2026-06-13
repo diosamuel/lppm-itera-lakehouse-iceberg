@@ -1,6 +1,5 @@
 import io
 import os
-
 import pyarrow as pa
 import pyarrow.csv as pa_csv
 from extract_transform import Transform
@@ -11,14 +10,6 @@ from schema.listSchema import default_schema, default_schema_enrichment, sitasi_
 from setup_catalog import SetupIcebergCatalog
 from setup_minio import SetupMinioS3
 from setup_spark import SetupSpark
-
-# from tools.utils_spark import (
-#     get_faculty_udf,
-#     get_prodi_udf,
-#     map_faculty_degree_udf,
-#     match_name_udf,
-#     match_unique_id_udf,
-# )
 from write_audit_publish import WAPWorkflow
 
 # Initialize storage and catalog

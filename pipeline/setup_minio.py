@@ -1,10 +1,8 @@
 import os
 from functools import wraps
-
 import boto3
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
-
 load_dotenv()
 
 
@@ -43,15 +41,6 @@ class SetupMinioS3:
             return func(self, filename, *args, **kwargs)
 
         return wrapper
-
-    def initialize(self):
-        self.client = boto3.client(
-            "s3",
-            endpoint_url=self.endpoint_url,
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_key,
-        )
-        return self
 
     @check_bucket
     @check_file
@@ -123,3 +112,12 @@ class SetupMinioS3:
         for obj in response.get("Contents", []):
             filename.append(obj["Key"])
         return filename
+
+    def initialize(self):
+        self.client = boto3.client(
+            "s3",
+            endpoint_url=self.endpoint_url,
+            aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_key,
+        )
+        return self
