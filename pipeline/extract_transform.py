@@ -6,12 +6,15 @@ from dotenv import load_dotenv
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from tools.utils import (
+    clean_tanggal_udf,
     get_faculty_udf,
     get_prodi_udf,
     map_faculty_degree_udf,
     match_name_udf,
     match_unique_id_udf,
     removeNaN_udf,
+    capture_doi_udf,
+    standarizing_journal_udf,
 )
 
 load_dotenv()
@@ -82,16 +85,10 @@ class Transform:
             spark_df.withColumn("tahun", F.lit(str(tahun)))
             .withColumn("prodi", get_prodi_udf(F.col("program_studi")))
             .withColumn("fakultas", get_faculty_udf(F.col("program_studi")))
-            .withColumn(
-                "nim_anggota_mahasiswa", match_unique_id_udf(F.col("anggota_mahasiswa"))
-            )
-            .withColumn(
-                "name_anggota_mahasiswa", match_name_udf(F.col("anggota_mahasiswa"))
-            )
-            .withColumn(
-                "nip_anggota_dosen", match_unique_id_udf(F.col("anggota_dosen"))
-            )
-            .withColumn("name_anggota_dosen", match_name_udf(F.col("anggota_dosen")))
+            .withColumn("nim_anggota_mahasiswa", match_unique_id_udf(F.col("anggota_mahasiswa")))
+            .withColumn("nama_anggota_mahasiswa", match_name_udf(F.col("anggota_mahasiswa")))
+            .withColumn("nip_anggota_dosen", match_unique_id_udf(F.col("anggota_dosen")))
+            .withColumn("nama_anggota_dosen", match_name_udf(F.col("anggota_dosen")))
             .replace(float("nan"), None)
             .replace("", None)
         )
@@ -120,8 +117,22 @@ class Transform:
                 if dtype == "string":
                     spark_df = spark_df.withColumn(new, removeNaN_udf(F.col(new)))
 
-        spark_df = spark_df.drop("No").withColumn(
-            "fakultas", map_faculty_degree_udf(F.lower(F.col("nama_prodi")))
+        spark_df = (
+            spark_df.drop("No")
+            .withColumn("fakultas", map_faculty_degree_udf(F.lower(F.col("nama_prodi"))))
+            .withColumn("_tanggal_terbit", clean_tanggal_udf(F.col("tanggal_terbit")))
+            .withColumn("tanggal_terbit_hari", F.col("_tanggal_terbit.tanggal"))
+            .withColumn("tanggal_terbit_bulan", F.col("_tanggal_terbit.bulan"))
+            .withColumn("tanggal_terbit_tahun", F.col("_tanggal_terbit.tahun"))
+            .withColumn("tanggal_terbit_timestamp", F.col("_tanggal_terbit.timestamp"))
+            .drop("_tanggal_terbit")
+            .withColumn("doi",capture_doi_udf(F.col("doi")))
+            .withColumn("_journal", standarizing_journal_udf(F.col("kategori")))
+            .withColumn("jurnal", F.col("_journal.jurnal"))
+            .withColumn("jurnal_kategori", F.col("_journal.groups"))
+            .drop("_journal")
+            .drop("kategori")
+            .drop("tanggal_terbit")
         )
 
         self._batches.append(spark_df)

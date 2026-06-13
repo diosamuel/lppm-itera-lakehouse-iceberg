@@ -6,6 +6,7 @@ from pyiceberg.types import (
     LongType,
     NestedField,
     StringType,
+    TimestampType,
 )
 
 # Typical default schema is for Penelitian , Pengabdian & Buku Keilmuan
@@ -93,4 +94,13 @@ sitasi_schema = Schema(
     NestedField(field_id=9, name="triwulan", field_type=StringType(), required=False),
     NestedField(field_id=10, name="publikasi", field_type=StringType(), required=False),
     NestedField(field_id=11, name="doi", field_type=StringType(), required=False),
+    NestedField(field_id=12, name="hari", field_type=IntegerType(), required=False),
+    NestedField(field_id=13, name="bulan", field_type=IntegerType(), required=False),
+    NestedField(field_id=14, name="tahun", field_type=IntegerType(), required=False),
+    NestedField(
+        field_id=15,
+        name="tanggal_terbit_timestamp",
+        field_type=TimestampType(),
+        required=False,
+    ),
 )

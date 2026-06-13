@@ -8,12 +8,35 @@ from pyspark.sql.types import (
     StringType,
     StructField,
     StructType,
+    TimestampType,
 )
 
+standarizingJournalSchema = StructType(
+    [
+        StructField("jurnal", StringType(), True),
+        StructField("groups", StringType(), True),
+    ]
+)
 
+cleanTanggalSchema = StructType(
+    [
+        StructField("tanggal", IntegerType(), True),
+        StructField("bulan", IntegerType(), True),
+        StructField("tahun", IntegerType(), True),
+        StructField("timestamp", TimestampType(), True),
+    ]
+)
+
+normalizeDateSchema = StructType(
+    [
+        StructField("day", IntegerType(), True),
+        StructField("month", IntegerType(), True),
+        StructField("year", IntegerType(), True),
+    ]
+)
 def removeNaN(value):
     """Return None for NaN floats, empty strings, and null-like sentinel strings."""
-    empty_char = {"", "nan", "none", "null", "n/a", "na", "-"}
+    empty_char = {"", "nan", "none", "null", "n/a", "na", "-",'nat','tidak ada'}
     if value is None:
         return None
     if isinstance(value, float) and value != value:  # float NaN != NaN is always True
@@ -208,24 +231,6 @@ def normalizeDate(text):
 
     return (None, None, None)
 
-
-def mapping_date(df, column):
-    for indo, eng in BULAN_MAP.items():
-        df = df.withColumn(
-            column,
-            F.regexp_replace(F.col(column), indo, eng),
-        )
-
-    df = (
-        df.withColumn("parsed", normalize_date_udf(F.col(column)))
-        .withColumn("day", F.col("parsed.day"))
-        .withColumn("month", F.col("parsed.month"))
-        .withColumn("year", F.col("parsed.year"))
-        .drop("parsed")
-    )
-
-    return df
-
 def cleanScope(text):
     handle = {
         "LAIN - LAIN": "LAIN-LAIN",
@@ -241,7 +246,26 @@ def cleanScope(text):
 
 def cleanTanggal(text):
     text = removeNaN(text)
-    result = {"tanggal": 0, "bulan": 0, "tahun": 0}
+    result = {
+        "tanggal": 0,
+        "bulan": 0,
+        "tahun": 0,
+        "timestamp": None,
+    }
+
+    def build_result(day, month, year):
+        parsed = result | {"tanggal": day, "bulan": month, "tahun": year}
+        if day == 0 or month == 0 or year == 0:
+            return parsed
+
+        try:
+            date_value = datetime(year, month, day)
+        except (TypeError, ValueError):
+            return result
+
+        parsed["timestamp"] = date_value
+        return parsed
+
     if text is None:
         return result
 
@@ -252,37 +276,53 @@ def cleanTanggal(text):
         year = int(match.group(1))
         month = int(match.group(2))
         day = int(match.group(3))
-        try:
-            datetime(year, month, day)
-        except ValueError:
-            return result
-        return {"tanggal": day, "bulan": month, "tahun": year}
+        return build_result(day, month, year)
 
     match = re.match(r"^(\d{1,2})\s+([a-z]+)\s+(\d{4})$", text)
     if match:
         day = int(match.group(1))
-        month = MONTH_MAP.get(match.group(2), 0)
+        month = MONTH_MAP.get(match.group(2), None)
         year = int(match.group(3))
-        if month == 0:
-            return result
-        try:
-            datetime(year, month, day)
-        except ValueError:
-            return result
-        return {"tanggal": day, "bulan": month, "tahun": year}
+        return build_result(day, month, year)
 
     match = re.match(r"^([a-z]+)\s+(\d{4})$", text)
     if match:
-        month = MONTH_MAP.get(match.group(1), 0)
+        month = MONTH_MAP.get(match.group(1), None)
         year = int(match.group(2))
-        return {"tanggal": 0, "bulan": month, "tahun": year}
+        return build_result(0, month, year)
 
     match = re.match(r"^\d{4}$", text)
     if match:
-        return {"tanggal": 0, "bulan": 0, "tahun": int(text)}
+        return build_result(0, 0, int(text))
 
     return result
 
+def captureDOI(text):
+    regex = r'10\.\d{4,9}/[^\s"<>]+'
+    if text is not None:
+        match = re.search(regex, text, re.IGNORECASE)
+        if match:
+            return f"https://doi.org/{match.group(0)}"
+    return text
+
+def standarizingJournal(text):
+    text = removeNaN(text)
+    if text is None:
+        return {"jurnal": None, "groups": None}
+
+    journal = str(text).strip().upper()
+
+    if "INTERNASIONAL" in journal:
+        groups = "INTERNASIONAL"
+    elif "NASIONAL" in journal or "SINTA" in journal:
+        groups = "NASIONAL"
+    else:
+        groups = "LAINNYA"
+
+    return {"jurnal": journal, "groups": groups}
+
+def standarizingNamaDosen(text):
+    text = removeNaN(text)
 # user define function spark
 removeNaN_udf = F.udf(removeNaN, StringType())
 match_unique_id_udf = F.udf(matchUniqueID, ArrayType(StringType()))
@@ -291,22 +331,7 @@ get_prodi_udf = F.udf(getProdi, StringType())
 get_faculty_udf = F.udf(getFaculty, StringType())
 map_faculty_degree_udf = F.udf(mapFacultyDegree, StringType())
 clean_scope_udf = F.udf(cleanScope,StringType())
-
-cleanTanggalSchema = StructType(
-    [
-        StructField("tanggal", IntegerType(), True),
-        StructField("bulan", IntegerType(), True),
-        StructField("tahun", IntegerType(), True),
-    ]
-)
-
-normalizeDateSchema = StructType(
-    [
-        StructField("day", IntegerType(), True),
-        StructField("month", IntegerType(), True),
-        StructField("year", IntegerType(), True),
-    ]
-)
-
+capture_doi_udf = F.udf(captureDOI,StringType())
 normalize_date_udf = F.udf(normalizeDate, normalizeDateSchema)
 clean_tanggal_udf = F.udf(cleanTanggal, cleanTanggalSchema)
+standarizing_journal_udf = F.udf(standarizingJournal, standarizingJournalSchema)
