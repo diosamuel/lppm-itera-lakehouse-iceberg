@@ -89,16 +89,13 @@ BULAN_MAP = {
 def matchUniqueID(text):
     text = removeNaN(text)
     if isinstance(text, str):
-        # Find all parentheses groups
         groups = re.findall(r'\(([^)]*)\)', text)
-        # For each group, if it's digits, keep it; else if empty, use '0'; else skip
         result = []
         for g in groups:
             if g.isdigit():
                 result.append(g)
             elif g == '':
                 result.append('0')
-            # else: skip non-digit non-empty parentheses
         return result if result else None
     return None
 
@@ -126,6 +123,10 @@ def matchNames(text):
 
 
 def getProdi(text):
+    mapper = {
+        'SAP': 'SAINS ATMOSFER KEPLANETAN',
+        'TEKNIK KIMA': 'TEKNIK KIMIA',
+    }
     text = removeNaN(text)
     if text is None:
         return None
@@ -134,8 +135,10 @@ def getProdi(text):
     text = text.replace("program studi", "").strip()
     parts = text.split("-")
     if len(parts) > 1:
-        return parts[1].strip().upper()
-    return text
+        result = parts[1].strip().upper()
+    else:
+        result = text.upper()
+    return mapper.get(result, result)
 
 
 def getFaculty(text):
@@ -148,6 +151,10 @@ def getFaculty(text):
         "FTI": "Fakultas Teknologi Industri",
         "FTIK": "Fakultas Teknologi Industri dan Kewilayahan",
     }
+    
+    if text in mapper:
+        return mapper[text]
+    
     key = text.split("-")[0].strip()
     return mapper.get(key)
 
@@ -158,7 +165,7 @@ def mapFacultyDegree(prodi):
         return None
 
     mapper = {
-        "FS": [
+        "Fakultas Sains": [
             "biologi",
             "fisika",
             "sains lingkungan kelautan",
@@ -171,7 +178,7 @@ def mapFacultyDegree(prodi):
             "sains aktuaria",
             "matematika",
         ],
-        "FTI": [
+        "Fakultas Teknologi Industri": [
             "teknik pertambangan",
             "teknik elektro",
             "teknik informatika",
@@ -193,7 +200,7 @@ def mapFacultyDegree(prodi):
             "rekayasa instrumentasi dan automasi",
             "rekayasa minyak dan gas",
         ],
-        "FTIK": [
+        "Fakultas Teknologi Industri dan Kewilayahan": [
             "perencanaan wilayah dan kota",
             "teknik sipil",
             "arsitektur",
@@ -343,6 +350,7 @@ def standarizingNamaDosen(text):
     if text is None:
         return None
     text = str(text).strip()
+    text = re.sub(r'^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$', '', text).strip()
     if text and not text.endswith('.'):
         text = text + '.'
     return text or None
