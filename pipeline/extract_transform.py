@@ -35,7 +35,6 @@ class Transform:
                 f"Expected bytes or dict, got {type(load_response).__name__}"
             )
         pdf = pd.read_csv(io.BytesIO(raw_bytes))
-        # Drop columns with empty/whitespace-only names or pandas auto-index artifacts ("Unnamed: N")
         pdf = pdf.loc[
             :,
             pdf.columns.str.strip().astype(bool)
@@ -83,8 +82,12 @@ class Transform:
             .withColumn("nama_anggota_mahasiswa", match_name_udf(F.col("anggota_mahasiswa")))
             .withColumn("nip_anggota_dosen", match_unique_id_udf(F.col("anggota_dosen")))
             .withColumn("nama_anggota_dosen", match_name_udf(F.col("anggota_dosen")))
+            .withColumn("advisor",match_name_udf(F.col("advisor")))
             .replace(float("nan"), None)
             .replace("", None)
+            .drop('program_studi')
+            .drop('anggota_dosen')
+            .drop('anggota_mahasiswa')
         )
         self._batches.append(transformed)
         return self
@@ -93,11 +96,11 @@ class Transform:
         spark_df = self.toSparkDF(df)
         rename_map = {
             "Nama Dosen": ("nama_dosen", "string"),
-            "Nama Prodi": ("nama_prodi", "string"),
+            "Nama Prodi": ("prodi", "string"),
             "Fakultas": ("fakultas", "string"),
             "Tanggal Terbit": ("tanggal_terbit", "string"),
             "Kategori": ("kategori", "string"),
-            "Judul": ("judul", "string"),
+            "Judul": ("judul_proposal", "string"),
             "Sitasi": ("sitasi", "long"),
             "Triwulan": ("triwulan", "long"),
             "Publikasi": ("publikasi", "string"),
@@ -113,7 +116,7 @@ class Transform:
         spark_df = (
             spark_df.drop("No")
             .withColumn("ketua_peneliti",match_name_udf(F.col("nama_dosen"))[0])
-            .withColumn("fakultas", map_faculty_degree_udf(F.lower(F.col("nama_prodi"))))
+            .withColumn("fakultas", map_faculty_degree_udf(F.lower(F.col("prodi"))))
             .withColumn("_tanggal_terbit", clean_tanggal_udf(F.col("tanggal_terbit")))
             .withColumn("tanggal_terbit_hari", F.col("_tanggal_terbit.tanggal"))
             .withColumn("tanggal_terbit_bulan", F.col("_tanggal_terbit.bulan"))
