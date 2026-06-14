@@ -23,7 +23,6 @@ class Transform:
         self._batches: list = []
 
     def toSparkDF(self, load_response):
-        """Convert raw CSV bytes or a StorageS3.load() response dict into a Spark DataFrame."""
         if isinstance(load_response, bytes):
             raw_bytes = load_response
         elif isinstance(load_response, dict):
@@ -117,6 +116,7 @@ class Transform:
             spark_df.drop("No")
             .withColumn("ketua_peneliti",match_name_udf(F.col("nama_dosen"))[0])
             .withColumn("fakultas", map_faculty_degree_udf(F.lower(F.col("prodi"))))
+            .withColumn("prodi", get_prodi_udf(F.col("prodi")))
             .withColumn("_tanggal_terbit", clean_tanggal_udf(F.col("tanggal_terbit")))
             .withColumn("tanggal_terbit_hari", F.col("_tanggal_terbit.tanggal"))
             .withColumn("tanggal_terbit_bulan", F.col("_tanggal_terbit.bulan"))

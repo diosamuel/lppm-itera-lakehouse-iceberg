@@ -124,7 +124,7 @@ def matchNames(text):
 
 def getProdi(text):
     mapper = {
-        'SAP': 'SAINS ATMOSFER KEPLANETAN',
+        'SAP': 'SAINS ATMOSFER DAN KEPLANETAN',
         'TEKNIK KIMA': 'TEKNIK KIMIA',
     }
     text = removeNaN(text)
