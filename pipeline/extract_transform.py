@@ -82,7 +82,7 @@ class Transform:
             .withColumn("nama_anggota_mahasiswa", match_name_udf(F.col("anggota_mahasiswa")))
             .withColumn("nip_anggota_dosen", match_unique_id_udf(F.col("anggota_dosen")))
             .withColumn("nama_anggota_dosen", match_name_udf(F.col("anggota_dosen")))
-            .withColumn("advisor",match_name_udf(F.col("advisor")))
+            .withColumn("advisor",match_name_udf(F.col("advisor"))[0])
             .replace(float("nan"), None)
             .replace("", None)
             .drop('program_studi')

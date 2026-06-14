@@ -18,6 +18,30 @@ StorageS3 = SetupMinioS3(
     bucket="sipaper",
 ).initialize()
 
+# Upload PDF documents from data/pdf/penelitian and data/pdf/pengabdian
+PDF_BASE_DIR = "/home/iceberg/notebooks/data/pdf"
+YEARS = ["2021", "2022", "2023", "2024", "2025"]
+
+for research_type in ["penelitian", "pengabdian"]:
+    type_dir = os.path.join(PDF_BASE_DIR, research_type)
+    if not os.path.isdir(type_dir):
+        continue
+    for subfolder in os.listdir(type_dir):
+        subfolder_path = os.path.join(type_dir, subfolder)
+        if not os.path.isdir(subfolder_path):
+            continue
+        for filename in os.listdir(subfolder_path):
+            filepath = os.path.join(subfolder_path, filename)
+            if not os.path.isfile(filepath):
+                continue
+            for year in YEARS:
+                s3_key = f"pdf/{research_type}/{year}/{subfolder}/{filename}"
+                result = StorageS3.upload(filename=s3_key, filepath=filepath)
+                if result.get("status") == "success":
+                    print(f"Uploaded: s3://sipaper/{s3_key}")
+                else:
+                    print(f"Skipped: s3://sipaper/{s3_key} ({result.get('message')})")
+
 IcebergCatalog = SetupIcebergCatalog(
     catalog_name="default",
     namespace="default",
