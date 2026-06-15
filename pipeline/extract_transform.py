@@ -4,6 +4,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
+from pyspark.sql.types import IntegerType, LongType
 from tools.utils import (
     clean_tanggal_udf,
     get_faculty_udf,
@@ -22,30 +23,14 @@ class Transform:
         self.document_type = document_type
         self._batches: list = []
 
-    def toSparkDF(self, load_response):
-        if isinstance(load_response, bytes):
-            raw_bytes = load_response
-        elif isinstance(load_response, dict):
-            if not load_response.get("status"):
-                raise ValueError(f"Failed to load file: {load_response.get('message')}")
-            raw_bytes = load_response["content"]
-        else:
-            raise TypeError(
-                f"Expected bytes or dict, got {type(load_response).__name__}"
-            )
-        pdf = pd.read_csv(io.BytesIO(raw_bytes))
-        pdf = pdf.loc[
-            :,
-            pdf.columns.str.strip().astype(bool)
-            & ~pdf.columns.str.match(r"^Unnamed: \d+$"),
-        ]
-        return self.spark.createDataFrame(pdf)
-
     def processData(self, df, tahun):
         """
         df = raw CSV bytes or StorageS3.load() response dict
         """
-        spark_df = self.toSparkDF(df)
+        # spark_df = self.toSparkDF(df)
+        spark_df=self.spark.read.option("header","true").option("inferSchema","true").csv(df)
+        if "_c0" in spark_df.columns:
+            spark_df = spark_df.drop("_c0")
         # Infer schema & rename columns
         rename_map = {
             "Judul Proposal": ("judul_proposal", "string"),
@@ -68,11 +53,14 @@ class Transform:
                 spark_df = spark_df.withColumnRenamed(old, new)
                 if dtype == "string":
                     spark_df = spark_df.withColumn(new, removeNaN_udf(F.col(new)))
-        spark_df = spark_df.drop("No")
+                elif dtype == "long":
+                    spark_df = spark_df.withColumn(new, F.col(new).cast(LongType()))
+        if "No" in spark_df.columns:
+            spark_df = spark_df.drop("No")
 
         # Transform
         transformed = (
-            spark_df.withColumn("tahun", F.lit(str(tahun)))
+            spark_df.withColumn("tahun", F.lit(tahun).cast(IntegerType()))
             .withColumn("prodi", get_prodi_udf(F.col("program_studi")))
             .withColumn("fakultas", get_faculty_udf(F.col("program_studi")))
             .withColumn("ketua_peneliti",match_name_udf(F.col("ketua_peneliti"))[0])
@@ -92,7 +80,9 @@ class Transform:
         return self
 
     def processSitasiData(self, df, tahun):
-        spark_df = self.toSparkDF(df)
+        spark_df = self.spark.read.option("header","true").option("inferSchema","true").csv(df)
+        if "_c0" in spark_df.columns:
+            spark_df = spark_df.drop("_c0")
         rename_map = {
             "Nama Dosen": ("nama_dosen", "string"),
             "Nama Prodi": ("prodi", "string"),
@@ -111,10 +101,13 @@ class Transform:
                 spark_df = spark_df.withColumnRenamed(old, new)
                 if dtype == "string":
                     spark_df = spark_df.withColumn(new, removeNaN_udf(F.col(new)))
+                elif dtype == "long":
+                    spark_df = spark_df.withColumn(new, F.col(new).cast(LongType()))
 
+        if "No" in spark_df.columns:
+            spark_df = spark_df.drop("No")
         spark_df = (
-            spark_df.drop("No")
-            .withColumn("ketua_peneliti",match_name_udf(F.col("nama_dosen"))[0])
+            spark_df.withColumn("ketua_peneliti",match_name_udf(F.col("nama_dosen"))[0])
             .withColumn("fakultas", map_faculty_degree_udf(F.lower(F.col("prodi"))))
             .withColumn("prodi", get_prodi_udf(F.col("prodi")))
             .withColumn("_tanggal_terbit", clean_tanggal_udf(F.col("tanggal_terbit")))

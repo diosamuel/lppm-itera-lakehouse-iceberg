@@ -48,10 +48,12 @@ class SetupSpark:
                 f"spark.sql.catalog.{self.catalog_name}.s3.endpoint", self.s3_endpoint
             )
             # MinIO
+            .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
             .config("spark.hadoop.fs.s3a.access.key", self.access_key)
             .config("spark.hadoop.fs.s3a.secret.key", self.secret_key)
             .config("spark.hadoop.fs.s3a.endpoint", self.s3_endpoint)
             .config("spark.hadoop.fs.s3a.path.style.access", "true")
+            .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
             # Default catalog
             .config("spark.sql.defaultCatalog", self.catalog_name)
             # Make pipeline modules importable inside UDFs on every worker

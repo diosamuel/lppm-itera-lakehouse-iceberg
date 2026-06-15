@@ -74,6 +74,7 @@ class SetupMinioS3:
         return {
             "status": True,
             "content": content,
+            "path": f"s3a://{self.bucket}/{filename}",
         }
 
     @check_bucket

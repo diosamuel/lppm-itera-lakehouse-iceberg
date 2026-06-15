@@ -96,15 +96,15 @@ sitasi = IcebergCatalog.create_table("sitasi", sitasi_schema)
     StorageS3.load("csv/penelitian/2024/penelitian_2024.csv"),
     StorageS3.load("csv/penelitian/2025/penelitian_2025.csv"),
 ]
-# print(csv_penelitian_2021["content"])
+# print(csv_penelitian_2021["path"])
 
 res = (
     Transform(spark=SparkSession, document_type="penelitian")
-    .processData(csv_penelitian_2021["content"], 2021)
-    .processData(csv_penelitian_2022["content"], 2022)
-    .processData(csv_penelitian_2023["content"], 2023)
-    .processData(csv_penelitian_2024["content"], 2024)
-    .processData(csv_penelitian_2025["content"], 2025)
+    .processData(csv_penelitian_2021["path"], 2021)
+    .processData(csv_penelitian_2022["path"], 2022)
+    .processData(csv_penelitian_2023["path"], 2023)
+    .processData(csv_penelitian_2024["path"], 2024)
+    .processData(csv_penelitian_2025["path"], 2025)
     .join()
 )
 res.writeTo("default.default.penelitian").createOrReplace()
@@ -127,11 +127,11 @@ res.writeTo("default.default.penelitian").createOrReplace()
 res = (
     (
         Transform(spark=SparkSession, document_type="pengabdian")
-        .processData(csv_pengabdian_2021["content"], 2021)
-        .processData(csv_pengabdian_2022["content"], 2022)
-        .processData(csv_pengabdian_2023["content"], 2023)
-        .processData(csv_pengabdian_2024["content"], 2024)
-        .processData(csv_pengabdian_2025["content"], 2025)
+        .processData(csv_pengabdian_2021["path"], 2021)
+        .processData(csv_pengabdian_2022["path"], 2022)
+        .processData(csv_pengabdian_2023["path"], 2023)
+        .processData(csv_pengabdian_2024["path"], 2024)
+        .processData(csv_pengabdian_2025["path"], 2025)
         .join()
     )
     .writeTo("default.default.pengabdian")
@@ -148,8 +148,8 @@ res = (
 res = (
     (
         Transform(spark=SparkSession, document_type="buku_keilmuan")
-        .processData(csv_buku_keilmuan_2023["content"], 2023)
-        .processData(csv_buku_keilmuan_2024["content"], 2024)
+        .processData(csv_buku_keilmuan_2023["path"], 2023)
+        .processData(csv_buku_keilmuan_2024["path"], 2024)
         .join()
     )
     .writeTo("default.default.buku_keilmuan")
@@ -164,7 +164,7 @@ res = (
 res = (
     (
         Transform(spark=SparkSession, document_type="sitasi")
-        .processSitasiData(csv_sitasi_2026["content"], 2026)
+        .processSitasiData(csv_sitasi_2026["path"], 2026)
         .join()
     )
     .writeTo("default.default.sitasi")
