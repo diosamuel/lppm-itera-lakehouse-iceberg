@@ -27,8 +27,7 @@ class Transform:
         """
         df = raw CSV bytes or StorageS3.load() response dict
         """
-        # spark_df = self.toSparkDF(df)
-        spark_df=self.spark.read.option("header","true").option("inferSchema","true").csv(df)
+        spark_df = self.spark.read.option("header","true").option("inferSchema","true").csv(df)
         if "_c0" in spark_df.columns:
             spark_df = spark_df.drop("_c0")
         # Infer schema & rename columns
@@ -114,7 +113,7 @@ class Transform:
             .withColumn("tanggal_terbit_hari", F.col("_tanggal_terbit.tanggal"))
             .withColumn("tanggal_terbit_bulan", F.col("_tanggal_terbit.bulan"))
             .withColumn("tanggal_terbit_tahun", F.col("_tanggal_terbit.tahun"))
-            .withColumn("tanggal_terbit_timestamp", F.col("_tanggal_terbit.timestamp"))
+            .withColumn("tanggal_terbit_timestamp", F.when(F.col("_tanggal_terbit.timestamp").isNotNull(), F.col("_tanggal_terbit.timestamp")))
             .withColumn("doi",capture_doi_udf(F.col("doi")))
             .withColumn("_journal", standarizing_journal_udf(F.col("kategori")))
             .withColumn("jurnal", F.col("_journal.jurnal"))

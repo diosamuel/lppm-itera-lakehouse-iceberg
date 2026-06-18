@@ -1,24 +1,16 @@
-import io
 import os
-import pyarrow as pa
-import pyarrow.csv as pa_csv
 from extract_transform import Transform
-from pyiceberg.io.pyarrow import schema_to_pyarrow
-from pyiceberg.types import IntegerType
-from pyspark.sql import functions as F
-from schema.listSchema import default_schema, default_schema_enrichment, sitasi_schema
 from setup_catalog import SetupIcebergCatalog
 from setup_minio import SetupMinioS3
 from setup_spark import SetupSpark
-from write_audit_publish import WAPWorkflow
 
-# Initialize storage and catalog
+# Initialize storage
 StorageS3 = SetupMinioS3(
     endpoint_url="http://minio:9000",
     bucket="sipaper",
 ).initialize()
 
-# Upload PDF documents from data/pdf/penelitian and data/pdf/pengabdian
+# Upload PDF documents
 PDF_BASE_DIR = "/home/iceberg/notebooks/data/pdf"
 YEARS = ["2021", "2022", "2023", "2024", "2025"]
 
@@ -42,9 +34,10 @@ for research_type in ["penelitian", "pengabdian"]:
                 else:
                     print(f"Skipped: s3://sipaper/{s3_key} ({result.get('message')})")
 
+# Initialize catalog and spark
 IcebergCatalog = SetupIcebergCatalog(
     catalog_name="default",
-    namespace="default",
+    namespace="silver",
 ).initialize()
 
 SparkSession = SetupSpark(
@@ -52,10 +45,11 @@ SparkSession = SetupSpark(
     catalog_name="default",
 ).initialize()
 
+# Upload CSV files
 list_directory = os.listdir("/home/iceberg/notebooks/data")
-
 for file in list_directory:
     if file.endswith(".csv"):
+        print(file)
         research_type = file.rsplit("_", 1)[0]
         year = file.rsplit("_", 1)[1].split(".")[0]
         file_endpoint = None
@@ -77,46 +71,29 @@ for file in list_directory:
             filepath=f"/home/iceberg/notebooks/data/{file}",
         )
 
-buku_keilmuan = IcebergCatalog.create_table("buku_keilmuan", default_schema)
-penelitian = IcebergCatalog.create_table("penelitian", default_schema)
-pengabdian = IcebergCatalog.create_table("pengabdian", default_schema)
-sitasi = IcebergCatalog.create_table("sitasi", sitasi_schema)
-
-# Penelitian
-[
-    csv_penelitian_2021,
-    csv_penelitian_2022,
-    csv_penelitian_2023,
-    csv_penelitian_2024,
-    csv_penelitian_2025,
-] = [
+# --- Penelitian ---
+csv_penelitian = [
     StorageS3.load("csv/penelitian/2021/penelitian_2021.csv"),
     StorageS3.load("csv/penelitian/2022/penelitian_2022.csv"),
     StorageS3.load("csv/penelitian/2023/penelitian_2023.csv"),
     StorageS3.load("csv/penelitian/2024/penelitian_2024.csv"),
     StorageS3.load("csv/penelitian/2025/penelitian_2025.csv"),
 ]
-# print(csv_penelitian_2021["path"])
 
 res = (
     Transform(spark=SparkSession, document_type="penelitian")
-    .processData(csv_penelitian_2021["path"], 2021)
-    .processData(csv_penelitian_2022["path"], 2022)
-    .processData(csv_penelitian_2023["path"], 2023)
-    .processData(csv_penelitian_2024["path"], 2024)
-    .processData(csv_penelitian_2025["path"], 2025)
+    .processData(csv_penelitian[0]["path"], 2021)
+    .processData(csv_penelitian[1]["path"], 2022)
+    .processData(csv_penelitian[2]["path"], 2023)
+    .processData(csv_penelitian[3]["path"], 2024)
+    .processData(csv_penelitian[4]["path"], 2025)
     .join()
 )
-res.writeTo("default.default.penelitian").createOrReplace()
+res.writeTo("silver.penelitian").createOrReplace()
+print("Written silver.penelitian")
 
-# Pengabdian
-[
-    csv_pengabdian_2021,
-    csv_pengabdian_2022,
-    csv_pengabdian_2023,
-    csv_pengabdian_2024,
-    csv_pengabdian_2025,
-] = [
+# --- Pengabdian ---
+csv_pengabdian = [
     StorageS3.load("csv/pengabdian/2021/pengabdian_2021.csv"),
     StorageS3.load("csv/pengabdian/2022/pengabdian_2022.csv"),
     StorageS3.load("csv/pengabdian/2023/pengabdian_2023.csv"),
@@ -125,48 +102,41 @@ res.writeTo("default.default.penelitian").createOrReplace()
 ]
 
 res = (
-    (
-        Transform(spark=SparkSession, document_type="pengabdian")
-        .processData(csv_pengabdian_2021["path"], 2021)
-        .processData(csv_pengabdian_2022["path"], 2022)
-        .processData(csv_pengabdian_2023["path"], 2023)
-        .processData(csv_pengabdian_2024["path"], 2024)
-        .processData(csv_pengabdian_2025["path"], 2025)
-        .join()
-    )
-    .writeTo("default.default.pengabdian")
-    .createOrReplace()
+    Transform(spark=SparkSession, document_type="pengabdian")
+    .processData(csv_pengabdian[0]["path"], 2021)
+    .processData(csv_pengabdian[1]["path"], 2022)
+    .processData(csv_pengabdian[2]["path"], 2023)
+    .processData(csv_pengabdian[3]["path"], 2024)
+    .processData(csv_pengabdian[4]["path"], 2025)
+    .join()
 )
+res.writeTo("silver.pengabdian").createOrReplace()
+print("Written silver.pengabdian")
 
-
-# Buku Keilmuan
-[csv_buku_keilmuan_2023, csv_buku_keilmuan_2024] = [
+# --- Buku Keilmuan ---
+csv_buku_keilmuan = [
     StorageS3.load("csv/buku_keilmuan/2023/buku_keilmuan_2023.csv"),
     StorageS3.load("csv/buku_keilmuan/2024/buku_keilmuan_2024.csv"),
 ]
 
 res = (
-    (
-        Transform(spark=SparkSession, document_type="buku_keilmuan")
-        .processData(csv_buku_keilmuan_2023["path"], 2023)
-        .processData(csv_buku_keilmuan_2024["path"], 2024)
-        .join()
-    )
-    .writeTo("default.default.buku_keilmuan")
-    .createOrReplace()
+    Transform(spark=SparkSession, document_type="buku_keilmuan")
+    .processData(csv_buku_keilmuan[0]["path"], 2023)
+    .processData(csv_buku_keilmuan[1]["path"], 2024)
+    .join()
 )
+res.writeTo("silver.buku_keilmuan").createOrReplace()
+print("Written silver.buku_keilmuan")
 
-# Sitasi
-[csv_sitasi_2026] = [
+# --- Sitasi ---
+csv_sitasi = [
     StorageS3.load("csv/sitasi/2026/sitasi_2026.csv"),
 ]
 
 res = (
-    (
-        Transform(spark=SparkSession, document_type="sitasi")
-        .processSitasiData(csv_sitasi_2026["path"], 2026)
-        .join()
-    )
-    .writeTo("default.default.sitasi")
-    .createOrReplace()
+    Transform(spark=SparkSession, document_type="sitasi")
+    .processSitasiData(csv_sitasi[0]["path"], 2026)
+    .join()
 )
+res.writeTo("silver.sitasi").createOrReplace()
+print("Written silver.sitasi")

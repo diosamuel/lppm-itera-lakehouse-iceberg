@@ -26,8 +26,12 @@ class SetupIcebergCatalog:
         return self
 
     def create_namespace(self, namespace=None):
-        self.catalog.create_namespace_if_not_exists(namespace or self.namespace)
-        print(f"Namespace '{self.namespace}' created.")
+        ns = namespace or self.namespace
+        try:
+            self.catalog.create_namespace_if_not_exists(ns)
+        except Exception:
+            pass  # Namespace already exists, ignore
+        print(f"Namespace '{ns}' ready.")
         return self.catalog
 
     def create_table(self, table_name, schema):
@@ -42,6 +46,14 @@ class SetupIcebergCatalog:
                 )
                 self.catalog.drop_table(full_name)
 
+        table = self.catalog.create_table(full_name, schema=schema)
+        return table
+
+    def create_replace_table(self, table_name, schema):
+        full_name = f"{self.namespace}.{table_name}"
+        existing_tables = [t[1] for t in self.catalog.list_tables(self.namespace)]
+        if table_name in existing_tables:
+            self.catalog.drop_table(full_name)
         table = self.catalog.create_table(full_name, schema=schema)
         return table
 

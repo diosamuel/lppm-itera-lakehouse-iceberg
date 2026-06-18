@@ -9,98 +9,84 @@ from pyiceberg.types import (
     TimestampType,
 )
 
-# Typical default schema is for Penelitian , Pengabdian & Buku Keilmuan
+# Final output schema for Penelitian, Pengabdian & Buku Keilmuan
+# Matches columns produced by Transform.processData()
 default_schema = Schema(
-    NestedField(field_id=1, name="no", field_type=LongType(), required=False),
+    NestedField(field_id=1, name="judul_proposal", field_type=StringType(), required=False),
+    NestedField(field_id=2, name="ketua_peneliti", field_type=StringType(), required=False),
+    NestedField(field_id=3, name="jenis", field_type=StringType(), required=False),
+    NestedField(field_id=4, name="status", field_type=StringType(), required=False),
+    NestedField(field_id=5, name="skema", field_type=StringType(), required=False),
+    NestedField(field_id=6, name="scope", field_type=StringType(), required=False),
+    NestedField(field_id=7, name="sdgs", field_type=StringType(), required=False),
+    NestedField(field_id=8, name="usulan_biaya", field_type=LongType(), required=False),
+    NestedField(field_id=9, name="status_proposal", field_type=StringType(), required=False),
+    NestedField(field_id=10, name="tahun", field_type=IntegerType(), required=False),
+    NestedField(field_id=11, name="prodi", field_type=StringType(), required=False),
+    NestedField(field_id=12, name="fakultas", field_type=StringType(), required=False),
     NestedField(
-        field_id=2, name="judul_proposal", field_type=StringType(), required=False
-    ),
-    NestedField(
-        field_id=3, name="ketua_peneliti", field_type=StringType(), required=False
-    ),
-    NestedField(field_id=4, name="jenis", field_type=StringType(), required=False),
-    NestedField(field_id=5, name="status", field_type=StringType(), required=False),
-    NestedField(field_id=6, name="skema", field_type=StringType(), required=False),
-    NestedField(field_id=7, name="scope", field_type=StringType(), required=False),
-    NestedField(field_id=8, name="sdgs", field_type=StringType(), required=False),
-    NestedField(
-        field_id=9, name="program_studi", field_type=StringType(), required=False
-    ),
-    NestedField(
-        field_id=10, name="anggota_dosen", field_type=StringType(), required=False
-    ),
-    NestedField(
-        field_id=11, name="anggota_mahasiswa", field_type=StringType(), required=False
-    ),
-    NestedField(field_id=12, name="advisor", field_type=StringType(), required=False),
-    NestedField(
-        field_id=13, name="usulan_biaya", field_type=LongType(), required=False
-    ),
-    NestedField(
-        field_id=14, name="status_proposal", field_type=StringType(), required=False
-    ),
-)
-
-default_schema_enrichment = Schema(
-    *default_schema.fields,
-    NestedField(field_id=15, name="tahun", field_type=IntegerType(), required=False),
-    NestedField(field_id=16, name="prodi", field_type=StringType(), required=False),
-    NestedField(field_id=17, name="fakultas", field_type=StringType(), required=False),
-    NestedField(
-        field_id=18,
-        name="nim_mahasiswa",
+        field_id=13,
+        name="nip_ketua_peneliti",
         field_type=ListType(
-            element_id=101, element_type=IntegerType(), element_required=False
+            element_id=301, element_type=StringType(), element_required=False
         ),
         required=False,
     ),
     NestedField(
-        field_id=19,
-        name="nip_anggota_dosen",
+        field_id=14,
+        name="nim_anggota_mahasiswa",
         field_type=ListType(
-            element_id=102, element_type=IntegerType(), element_required=False
+            element_id=302, element_type=StringType(), element_required=False
         ),
         required=False,
     ),
-    NestedField(
-        field_id=20,
-        name="nama_anggota_dosen",
-        field_type=ListType(
-            element_id=103, element_type=StringType(), element_required=False
-        ),
-        required=False,
-    ),
-    NestedField(
-        field_id=21,
-        name="nama_anggota_mahasiswa",
-        field_type=ListType(
-            element_id=104, element_type=StringType(), element_required=False
-        ),
-        required=False,
-    ),
-)
-
-sitasi_schema = Schema(
-    NestedField(field_id=1, name="no", field_type=StringType(), required=False),
-    NestedField(field_id=2, name="nama_dosen", field_type=StringType(), required=False),
-    NestedField(field_id=3, name="nama_prodi", field_type=StringType(), required=False),
-    NestedField(field_id=4, name="fakultas", field_type=StringType(), required=False),
-    NestedField(
-        field_id=5, name="tanggal_terbit", field_type=StringType(), required=False
-    ),
-    NestedField(field_id=6, name="kategori", field_type=StringType(), required=False),
-    NestedField(field_id=7, name="judul", field_type=StringType(), required=False),
-    NestedField(field_id=8, name="sitasi", field_type=StringType(), required=False),
-    NestedField(field_id=9, name="triwulan", field_type=StringType(), required=False),
-    NestedField(field_id=10, name="publikasi", field_type=StringType(), required=False),
-    NestedField(field_id=11, name="doi", field_type=StringType(), required=False),
-    NestedField(field_id=12, name="hari", field_type=IntegerType(), required=False),
-    NestedField(field_id=13, name="bulan", field_type=IntegerType(), required=False),
-    NestedField(field_id=14, name="tahun", field_type=IntegerType(), required=False),
     NestedField(
         field_id=15,
+        name="nama_anggota_mahasiswa",
+        field_type=ListType(
+            element_id=303, element_type=StringType(), element_required=False
+        ),
+        required=False,
+    ),
+    NestedField(
+        field_id=16,
+        name="nip_anggota_dosen",
+        field_type=ListType(
+            element_id=304, element_type=StringType(), element_required=False
+        ),
+        required=False,
+    ),
+    NestedField(
+        field_id=17,
+        name="nama_anggota_dosen",
+        field_type=ListType(
+            element_id=305, element_type=StringType(), element_required=False
+        ),
+        required=False,
+    ),
+    NestedField(field_id=18, name="advisor", field_type=StringType(), required=False),
+)
+
+# Final output schema for Sitasi
+# Matches columns produced by Transform.processSitasiData()
+sitasi_schema = Schema(
+    NestedField(field_id=1, name="prodi", field_type=StringType(), required=False),
+    NestedField(field_id=2, name="fakultas", field_type=StringType(), required=False),
+    NestedField(field_id=3, name="ketua_peneliti", field_type=StringType(), required=False),
+    NestedField(field_id=4, name="judul_proposal", field_type=StringType(), required=False),
+    NestedField(field_id=5, name="sitasi", field_type=LongType(), required=False),
+    NestedField(field_id=6, name="triwulan", field_type=LongType(), required=False),
+    NestedField(field_id=7, name="publikasi", field_type=StringType(), required=False),
+    NestedField(field_id=8, name="doi", field_type=StringType(), required=False),
+    NestedField(field_id=9, name="tanggal_terbit_hari", field_type=IntegerType(), required=False),
+    NestedField(field_id=10, name="tanggal_terbit_bulan", field_type=IntegerType(), required=False),
+    NestedField(field_id=11, name="tanggal_terbit_tahun", field_type=IntegerType(), required=False),
+    NestedField(
+        field_id=12,
         name="tanggal_terbit_timestamp",
         field_type=TimestampType(),
         required=False,
     ),
+    NestedField(field_id=13, name="jurnal", field_type=StringType(), required=False),
+    NestedField(field_id=14, name="jurnal_kategori", field_type=StringType(), required=False),
 )

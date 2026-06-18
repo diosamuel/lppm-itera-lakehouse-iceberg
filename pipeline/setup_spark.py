@@ -47,6 +47,9 @@ class SetupSpark:
             .config(
                 f"spark.sql.catalog.{self.catalog_name}.s3.endpoint", self.s3_endpoint
             )
+            .config(
+                f"spark.sql.catalog.{self.catalog_name}.default-namespace", "silver"
+            )
             # MinIO
             .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
             .config("spark.hadoop.fs.s3a.access.key", self.access_key)

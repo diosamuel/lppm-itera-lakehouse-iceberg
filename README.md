@@ -65,3 +65,67 @@ Run an Airflow CLI command:
 ```bash
 docker compose --profile debug run --rm airflow-cli airflow dags list
 ```
+
+
+## Data Lakehouse Architecture
+
+Five namespaces organized by data quality and processing stage:
+
+| Namespace | Description | Tables |
+|-----------|-------------|--------|
+| **bronze** | Raw data, as-is from source | `sitasi`, `penelitian`, `pengabdian`, `buku_keilmuan` |
+| **audit** | Raw data awaiting validation before merge to silver | `sitasi`, `penelitian`, `pengabdian`, `buku_keilmuan` |
+| **silver** | Cleaned and validated data | `sitasi`, `penelitian`, `pengabdian`, `buku_keilmuan` |
+| **gold** | Dimension and fact tables for analytics | `dim_dosen`, `dim_skema`, `dim_sdgs`, `dim_jurnal`, `dim_hibah`, `dim_hibah_progress`, `dim_hibah_final`, `fact_hibah`, `fact_dosen_hibah`, `fact_sitasi` |
+
+### Bronze Layer
+> Raw data, as-is from source
+
+```
+bronze.sitasi
+bronze.penelitian
+bronze.pengabdian
+bronze.buku_keilmuan
+```
+
+### Audit Layer
+> Raw data awaiting validation before merge to silver
+
+```
+audit.sitasi
+audit.penelitian
+audit.pengabdian
+audit.buku_keilmuan
+```
+
+### Silver Layer
+> Cleaned and validated data
+
+```
+silver.sitasi
+silver.penelitian
+silver.pengabdian
+silver.buku_keilmuan
+```
+
+### Gold Layer
+> Dimension and fact tables for analytics modeling
+
+**Dimension Tables:**
+```
+gold.dim_dosen
+gold.dim_skema
+gold.dim_sdgs
+gold.dim_jurnal
+gold.dim_hibah
+gold.dim_hibah_progress
+gold.dim_hibah_final
+```
+
+**Fact Tables:**
+```
+gold.fact_hibah
+gold.fact_dosen_hibah
+gold.fact_sitasi
+```
+

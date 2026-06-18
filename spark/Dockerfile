@@ -46,16 +46,17 @@ ENV SPARK_VERSION=3.5.6
 ENV SPARK_MAJOR_VERSION=3.5
 ENV ICEBERG_VERSION=1.9.0
 
-# Download spark
-#RUN mkdir -p ${SPARK_HOME} \
-# && curl -L "https://www.apache.org/dyn/closer.lua/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz?action=download" -o spark-${SPARK_VERSION}-bin-hadoop3.tgz \
-# && tar xvzf spark-${SPARK_VERSION}-bin-hadoop3.tgz --directory /opt/spark --strip-components 1 \
-# && rm -rf spark-${SPARK_VERSION}-bin-hadoop3.tgz
+# Download spark (with local fallback)
+COPY bin/spark-3.5.6-bin-hadoop3.tgz /tmp/spark-local.tgz
 
 RUN mkdir -p ${SPARK_HOME} \
- && curl -L "https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz" -o /tmp/spark.tgz \
- && tar -xzf /tmp/spark.tgz -C /opt/spark --strip-components=1 \
- && rm /tmp/spark.tgz
+ && (curl -L --retry 5 --retry-delay 10 --connect-timeout 30 "https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz" -o /tmp/spark.tgz \
+     && tar -xzf /tmp/spark.tgz -C /opt/spark --strip-components=1 \
+     && rm /tmp/spark.tgz) \
+ || (echo "Download failed, using local fallback..." \
+     && cp /tmp/spark-local.tgz /tmp/spark.tgz \
+     && tar -xzf /tmp/spark.tgz -C /opt/spark --strip-components=1 \
+     && rm /tmp/spark.tgz)
 
 # RUN mkdir -p /opt/spark \
 #  && curl -L --retry 5 --retry-delay 10 https://archive.apache.org/dist/spark/spark-4.1.1/spark-4.1.1-bin-hadoop3.tgz -o spark.tgz \

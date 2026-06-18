@@ -48,8 +48,12 @@ for year in 2023 2024; do
 done
 
 # pdf - sitasi
-/usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/pdf/sitasi/2026"
+for year in 2026; do
+    /usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/pdf/sitasi/${year}"
+done
 
+
+# This is for csv
 # csv - penelitian
 for year in 2021 2022 2023 2024 2025; do
     /usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/csv/penelitian/${year}"
