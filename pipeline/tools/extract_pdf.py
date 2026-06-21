@@ -1,7 +1,7 @@
-import re
-from pathlib import Path
-from difflib import SequenceMatcher
 from collections import Counter
+from difflib import SequenceMatcher
+from pathlib import Path
+
 import pdfplumber
 
 SECTION_PROPOSAL_MANDIRI = [
@@ -150,9 +150,7 @@ class PDFExtractor:
         """
         if doc_type not in DOCUMENT_TYPES:
             valid_types = list(DOCUMENT_TYPES.keys())
-            raise ValueError(
-                f"Unknown doc_type: '{doc_type}'. Must be one of {valid_types}"
-            )
+            raise ValueError(f"Unknown doc_type: '{doc_type}'. Must be one of {valid_types}")
 
         self.pdf_path = Path(pdf_path)
         self.doc_type = doc_type
@@ -225,18 +223,17 @@ class PDFExtractor:
                 largest_font_size = max(char["size"] for char in characters_in_line)
 
                 # Check if any character in the line is bold
-                line_is_bold = any(
-                    self.isBoldChar(char.get("fontname", ""))
-                    for char in characters_in_line
-                )
+                line_is_bold = any(self.isBoldChar(char.get("fontname", "")) for char in characters_in_line)
 
-                lines.append({
-                    "page": page_number,
-                    "text": line_text,
-                    "font_size": largest_font_size,
-                    "is_bold": line_is_bold,
-                    "y_position": y_position,
-                })
+                lines.append(
+                    {
+                        "page": page_number,
+                        "text": line_text,
+                        "font_size": largest_font_size,
+                        "is_bold": line_is_bold,
+                        "y_position": y_position,
+                    }
+                )
 
         return lines
 
@@ -272,7 +269,7 @@ class PDFExtractor:
             line_is_bold = line["is_bold"]
 
             # Check if font size is larger than body text
-            is_larger_font = (line_font_size >= body_font_size + FONT_SIZE_DELTA)
+            is_larger_font = line_font_size >= body_font_size + FONT_SIZE_DELTA
 
             # Use stricter threshold for lines that are NOT bold or larger
             if is_larger_font or line_is_bold:
@@ -292,13 +289,15 @@ class PDFExtractor:
                 continue
 
             already_matched_titles.add(matched_title)
-            boundaries.append({
-                "title": matched_title,
-                "found_text": line_text,
-                "score": round(similarity_score, 3),
-                "page": line["page"],
-                "line_index": line_index,
-            })
+            boundaries.append(
+                {
+                    "title": matched_title,
+                    "found_text": line_text,
+                    "score": round(similarity_score, 3),
+                    "page": line["page"],
+                    "line_index": line_index,
+                }
+            )
 
         # Sort boundaries by their position in the document
         boundaries.sort(key=lambda boundary: boundary["line_index"])
@@ -329,7 +328,7 @@ class PDFExtractor:
             text_parts = []
             previous_page = None
 
-            for line in self.lines[start_index + 1:end_index]:
+            for line in self.lines[start_index + 1 : end_index]:
                 # Add blank line between pages
                 if previous_page is not None and line["page"] != previous_page:
                     text_parts.append("")
@@ -356,11 +355,7 @@ class PDFExtractor:
 
         for title in section_list:
             # Compare lowercase, stripped versions
-            similarity = SequenceMatcher(
-                None,
-                line_text.lower().strip(),
-                title.lower().strip()
-            ).ratio()
+            similarity = SequenceMatcher(None, line_text.lower().strip(), title.lower().strip()).ratio()
 
             if similarity > best_score:
                 best_title = title
@@ -392,6 +387,6 @@ class PDFExtractor:
         clean_text = " ".join(text.split())
 
         if clean_text.startswith(clean_subtitle):
-            text = text[len(subtitle):].strip()
+            text = text[len(subtitle) :].strip()
 
         return text

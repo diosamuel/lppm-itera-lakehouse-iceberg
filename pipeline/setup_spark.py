@@ -37,19 +37,13 @@ class SetupSpark:
             )
             .config(f"spark.sql.catalog.{self.catalog_name}.type", "rest")
             .config(f"spark.sql.catalog.{self.catalog_name}.uri", self.rest_uri)
-            .config(
-                f"spark.sql.catalog.{self.catalog_name}.warehouse", "s3://warehouse/"
-            )
+            .config(f"spark.sql.catalog.{self.catalog_name}.warehouse", "s3://warehouse/")
             .config(
                 f"spark.sql.catalog.{self.catalog_name}.io-impl",
                 "org.apache.iceberg.aws.s3.S3FileIO",
             )
-            .config(
-                f"spark.sql.catalog.{self.catalog_name}.s3.endpoint", self.s3_endpoint
-            )
-            .config(
-                f"spark.sql.catalog.{self.catalog_name}.default-namespace", "silver"
-            )
+            .config(f"spark.sql.catalog.{self.catalog_name}.s3.endpoint", self.s3_endpoint)
+            .config(f"spark.sql.catalog.{self.catalog_name}.default-namespace", "silver")
             # MinIO
             .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
             .config("spark.hadoop.fs.s3a.access.key", self.access_key)

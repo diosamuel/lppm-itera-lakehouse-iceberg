@@ -1,4 +1,5 @@
 import os
+
 from extract_transform import Transform
 from setup_catalog import SetupIcebergCatalog
 from setup_minio import SetupMinioS3
@@ -133,10 +134,6 @@ csv_sitasi = [
     StorageS3.load("csv/sitasi/2026/sitasi_2026.csv"),
 ]
 
-res = (
-    Transform(spark=SparkSession, document_type="sitasi")
-    .processSitasiData(csv_sitasi[0]["path"], 2026)
-    .join()
-)
+res = Transform(spark=SparkSession, document_type="sitasi").processSitasiData(csv_sitasi[0]["path"], 2026).join()
 res.writeTo("silver.sitasi").createOrReplace()
 print("Written silver.sitasi")

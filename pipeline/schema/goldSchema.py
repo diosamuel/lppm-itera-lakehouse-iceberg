@@ -1,5 +1,6 @@
 import os
 import sys
+
 from dotenv import load_dotenv
 from pyiceberg.schema import Schema
 from pyiceberg.types import IntegerType, LongType, NestedField, StringType, TimestampType
@@ -147,32 +148,26 @@ fact_sitasi_schema = Schema(
 
 
 GOLD_TABLES = [
-    ("dim_dosen",dim_dosen_schema),
-    ("dim_skema",dim_skema_schema),
-    ("dim_sdgs",dim_sdgs_schema),
-    ("dim_jurnal",dim_jurnal_schema),
-    ("dim_hibah_proposal",dim_hibah_proposal_schema),
-    ("dim_hibah_final",dim_hibah_final_schema),
-    ("dim_hibah_progress",dim_hibah_progress_schema),
-    ("fact_hibah",fact_hibah_schema),
-    ("fact_dosen_hibah",fact_dosen_hibah_schema),
-    ("fact_sitasi",fact_sitasi_schema),
+    ("dim_dosen", dim_dosen_schema),
+    ("dim_skema", dim_skema_schema),
+    ("dim_sdgs", dim_sdgs_schema),
+    ("dim_jurnal", dim_jurnal_schema),
+    ("dim_hibah_proposal", dim_hibah_proposal_schema),
+    ("dim_hibah_final", dim_hibah_final_schema),
+    ("dim_hibah_progress", dim_hibah_progress_schema),
+    ("fact_hibah", fact_hibah_schema),
+    ("fact_dosen_hibah", fact_dosen_hibah_schema),
+    ("fact_sitasi", fact_sitasi_schema),
 ]
 
 
-SparkSession = SetupSpark(
-    app_name="init_gold",
-    catalog_name="default"
-)
+SparkSession = SetupSpark(app_name="init_gold", catalog_name="default")
 
-Catalog = SetupIcebergCatalog(
-    catalog_name="default",
-    namespace="gold"
-).initialize()
+Catalog = SetupIcebergCatalog(catalog_name="default", namespace="gold").initialize()
 
 
 for table_name, schema in GOLD_TABLES:
-    table = Catalog.create_replace_table(table_name,schema)
-    print('created table gold: ', table)
+    table = Catalog.create_replace_table(table_name, schema)
+    print("created table gold: ", table)
 
 print("Gold layer table init")

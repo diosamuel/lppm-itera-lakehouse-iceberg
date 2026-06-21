@@ -1,6 +1,5 @@
 from pyiceberg.schema import Schema
 from pyiceberg.types import (
-    DoubleType,
     IntegerType,
     ListType,
     LongType,
@@ -27,41 +26,31 @@ default_schema = Schema(
     NestedField(
         field_id=13,
         name="nip_ketua_peneliti",
-        field_type=ListType(
-            element_id=301, element_type=StringType(), element_required=False
-        ),
+        field_type=ListType(element_id=301, element_type=StringType(), element_required=False),
         required=False,
     ),
     NestedField(
         field_id=14,
         name="nim_anggota_mahasiswa",
-        field_type=ListType(
-            element_id=302, element_type=StringType(), element_required=False
-        ),
+        field_type=ListType(element_id=302, element_type=StringType(), element_required=False),
         required=False,
     ),
     NestedField(
         field_id=15,
         name="nama_anggota_mahasiswa",
-        field_type=ListType(
-            element_id=303, element_type=StringType(), element_required=False
-        ),
+        field_type=ListType(element_id=303, element_type=StringType(), element_required=False),
         required=False,
     ),
     NestedField(
         field_id=16,
         name="nip_anggota_dosen",
-        field_type=ListType(
-            element_id=304, element_type=StringType(), element_required=False
-        ),
+        field_type=ListType(element_id=304, element_type=StringType(), element_required=False),
         required=False,
     ),
     NestedField(
         field_id=17,
         name="nama_anggota_dosen",
-        field_type=ListType(
-            element_id=305, element_type=StringType(), element_required=False
-        ),
+        field_type=ListType(element_id=305, element_type=StringType(), element_required=False),
         required=False,
     ),
     NestedField(field_id=18, name="advisor", field_type=StringType(), required=False),

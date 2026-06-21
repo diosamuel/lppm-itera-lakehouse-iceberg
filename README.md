@@ -41,6 +41,12 @@
 | **Silver** | Cleaned & validated |
 | **Gold** | Dimension & fact tables for analytics |
 
+## Schema
+
+<p align="center">
+  <img src="assets/multifact-schema.png" alt="Multi-Fact Schema" width="900"/>
+</p>
+
 ## Common Commands
 
 ```bash

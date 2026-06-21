@@ -1,25 +1,14 @@
 import re
-import pandas as pd
 from datetime import datetime
 
-from pyspark.sql import DataFrame, functions as F
+from pyspark.sql import functions as F
 from pyspark.sql.types import (
     ArrayType,
-    DoubleType,
     IntegerType,
-    LongType,
     StringType,
     StructField,
     StructType,
     TimestampType,
-)
-from pyiceberg.types import (
-    DoubleType as IcebergDoubleType,
-    IntegerType as IcebergIntegerType,
-    ListType as IcebergListType,
-    LongType as IcebergLongType,
-    StringType as IcebergStringType,
-    TimestampType as IcebergTimestampType,
 )
 
 standarizingJournalSchema = StructType(
@@ -45,9 +34,11 @@ normalizeDateSchema = StructType(
         StructField("year", IntegerType(), True),
     ]
 )
+
+
 def removeNaN(value):
     """Return None for NaN floats, empty strings, and null-like sentinel strings."""
-    empty_char = {"", "nan", "none", "null", "n/a", "na", "-",'nat','tidak ada'}
+    empty_char = {"", "nan", "none", "null", "n/a", "na", "-", "nat", "tidak ada"}
     if value is None:
         return None
     if isinstance(value, float) and value != value:  # float NaN != NaN is always True
@@ -100,13 +91,13 @@ BULAN_MAP = {
 def matchUniqueID(text):
     text = removeNaN(text)
     if isinstance(text, str):
-        groups = re.findall(r'\(([^)]*)\)', text)
+        groups = re.findall(r"\(([^)]*)\)", text)
         result = []
         for g in groups:
             if g.isdigit():
                 result.append(g)
-            elif g == '':
-                result.append('0')
+            elif g == "":
+                result.append("0")
         return result if result else None
     return None
 
@@ -115,18 +106,18 @@ def matchNames(text):
     text = removeNaN(text)
     if not isinstance(text, str):
         return None
-    all_groups = list(re.finditer(r'\(([^)]*)\)', text))
+    all_groups = list(re.finditer(r"\(([^)]*)\)", text))
     if not all_groups:
         name = standarizingNamaDosen(text.strip())
         return [name] if name else None
-    id_groups = [m for m in all_groups if m.group(1).isdigit() or m.group(1) == '']
+    id_groups = [m for m in all_groups if m.group(1).isdigit() or m.group(1) == ""]
     if not id_groups:
         name = standarizingNamaDosen(text.strip())
         return [name] if name else None
     names = []
     for i, match in enumerate(id_groups):
-        before = text[:match.start()] if i == 0 else text[id_groups[i - 1].end():match.start()]
-        name = before.strip().strip(',;').strip()
+        before = text[: match.start()] if i == 0 else text[id_groups[i - 1].end() : match.start()]
+        name = before.strip().strip(",;").strip()
         name = standarizingNamaDosen(name)
         if name:
             names.append(name)
@@ -135,8 +126,8 @@ def matchNames(text):
 
 def getProdi(text):
     mapper = {
-        'SAP': 'SAINS ATMOSFER DAN KEPLANETAN',
-        'TEKNIK KIMA': 'TEKNIK KIMIA',
+        "SAP": "SAINS ATMOSFER DAN KEPLANETAN",
+        "TEKNIK KIMA": "TEKNIK KIMIA",
     }
     text = removeNaN(text)
     if text is None:
@@ -162,10 +153,10 @@ def getFaculty(text):
         "FTI": "Fakultas Teknologi Industri",
         "FTIK": "Fakultas Teknologi Industri dan Kewilayahan",
     }
-    
+
     if text in mapper:
         return mapper[text]
-    
+
     key = text.split("-")[0].strip()
     return mapper.get(key)
 
@@ -266,6 +257,7 @@ def normalizeDate(text):
 
     return (None, None, None)
 
+
 def cleanScope(text):
     handle = {
         "LAIN - LAIN": "LAIN-LAIN",
@@ -332,6 +324,7 @@ def cleanTanggal(text):
 
     return result
 
+
 def captureDOI(text):
     regex = r'10\.\d{4,9}/[^\s"<>]+'
     if text is not None:
@@ -339,6 +332,7 @@ def captureDOI(text):
         if match:
             return f"https://doi.org/{match.group(0)}"
     return text
+
 
 def standarizingJournal(text):
     text = removeNaN(text)
@@ -356,14 +350,15 @@ def standarizingJournal(text):
 
     return {"jurnal": journal, "groups": groups}
 
+
 def standarizingNamaDosen(text):
     text = removeNaN(text)
     if text is None:
         return None
     text = str(text).strip()
-    text = re.sub(r'^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$', '', text).strip()
-    if text and not text.endswith('.'):
-        text = text + '.'
+    text = re.sub(r"^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$", "", text).strip()
+    if text and not text.endswith("."):
+        text = text + "."
     return text or None
 
 
@@ -374,8 +369,8 @@ match_name_udf = F.udf(matchNames, ArrayType(StringType()))
 get_prodi_udf = F.udf(getProdi, StringType())
 get_faculty_udf = F.udf(getFaculty, StringType())
 map_faculty_degree_udf = F.udf(mapFacultyDegree, StringType())
-clean_scope_udf = F.udf(cleanScope,StringType())
-capture_doi_udf = F.udf(captureDOI,StringType())
+clean_scope_udf = F.udf(cleanScope, StringType())
+capture_doi_udf = F.udf(captureDOI, StringType())
 normalize_date_udf = F.udf(normalizeDate, normalizeDateSchema)
 clean_tanggal_udf = F.udf(cleanTanggal, cleanTanggalSchema)
 standarizing_journal_udf = F.udf(standarizingJournal, standarizingJournalSchema)
