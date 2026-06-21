@@ -143,7 +143,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-#.env
+.env
 .venv
 env/
 venv/
@@ -196,3 +196,19 @@ pdf/
 bin/
 
 notes/
+
+# Ruff cache
+.ruff_cache/
+
+# Logs directory
+logs/
+
+# Postgres local data
+postgres/
+
+# Spark warehouse
+spark-warehouse/
+
+# Airflow
+airflow/logs/
+airflow/.env

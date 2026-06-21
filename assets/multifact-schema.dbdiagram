@@ -1,0 +1,144 @@
+Table dim_dosen {
+  dosen_id INT [pk]
+  nip VARCHAR
+  nama VARCHAR
+  prodi VARCHAR
+  fakultas VARCHAR
+}
+
+Table dim_skema {
+  skema_id INT [pk]
+  nama_skema VARCHAR
+  pendanaan_maks INT
+}
+
+Table dim_sdgs {
+  sdgs_id INT [pk]
+  kode_sdgs VARCHAR
+  deskripsi VARCHAR
+  is_utama varchar
+  is_unggulan varchar
+}
+
+Table dim_jurnal {
+  jurnal_id INT [pk]
+  nama_jurnal VARCHAR
+  rank_jurnal varchar
+  kategori_jurnal VARCHAR
+}
+
+Table dim_hibah {
+  hibah_proposal_id VARCHAR [pk]
+  judul_proposal VARCHAR
+  status_proposal VARCHAR
+  judul_penelitian varchar
+  identitas_pengusul text
+  // jumlah_dana_usulan bigint
+  rekam_jejak_ketua_pengusul text
+  bidang_kepakaran text
+  bidang_penugasan text
+  bidang_prioritas text
+  sdgs text
+  ringkasan text
+  kata_kunci text
+  pendahuluan text
+  metode text
+  hasil_yang_diharapkan text
+  jadwal_penelitian text
+  biaya_penelitian text
+  daftar_pustaka text
+  scope_penelitian text
+  total_mahasiswa int
+}
+
+Table dim_hibah_progress {
+  hibah_proposal_id VARCHAR [pk]
+  judul_proposal VARCHAR
+  status_proposal VARCHAR
+  judul_penelitian varchar
+  identitas_pengusul text
+  bidang_penugasan text
+  sdgs text
+  ringkasan text
+  kata_kunci text
+  hasil_pelaksanaan_penelitian text
+  status_luaran text
+  kendala_pelaksanaan_penelitian text
+  rencana_tahapan_selanjutnya text
+  daftar_pustaka text
+  scope_penelitian text
+}
+
+Table dim_hibah_final {
+  hibah_proposal_id VARCHAR [pk]
+  judul_proposal VARCHAR
+  status_proposal VARCHAR
+  judul_penelitian varchar
+  identitas_pengusul text
+  bidang_penugasan text
+  sdgs text
+  ringkasan text
+  kata_kunci text
+  hasil_pelaksanaan_penelitian text
+  status_luaran text
+  kendala_pelaksanaan_penelitian text
+  rencana_tahapan_selanjutnya text
+  daftar_pustaka text
+  scope_penelitian text
+}
+
+Table fact_hibah {
+  hibah_fact_id INT [pk]
+  ketua_id INT
+  hibah_proposal_id VARCHAR
+  hibah_progress_id INT
+  skema_id INT
+  sdgs_id INT
+  file_id text // s3://file.pdf
+  hibah_final_id INT
+  // usulan_biaya BIGINT
+}
+
+Table dim_file { 
+  file_id int [pk] // s3://file.pdf
+  upload_time timestamp
+  size int
+  filename varchar
+  file_link varchar
+}
+
+Table fact_dosen_hibah {
+  id INT [pk]
+  dosen_id INT
+  hibah_proposal_id VARCHAR
+  tahun INT
+  role VARCHAR
+  jumlah INT
+  jenis VARCHAR //penelitian,pengabdian,buku_keilmuan
+  status_hibah varchar
+}
+
+Table fact_sitasi {
+  sitasi_fact_id INT [pk]
+  dosen_id INT
+  jurnal_id INT
+  tahun INT
+  bulan int
+  hari int
+  sitasi BIGINT
+  jumlah_publikasi INT
+  doi varchar
+  triwulan int // masih bingung ini triwulan apa
+}
+
+Ref: fact_hibah.ketua_id > dim_dosen.dosen_id
+Ref: fact_hibah.hibah_proposal_id > dim_hibah.hibah_proposal_id
+Ref: fact_hibah.skema_id > dim_skema.skema_id
+Ref: fact_hibah.sdgs_id > dim_sdgs.sdgs_id
+Ref: fact_dosen_hibah.dosen_id > dim_dosen.dosen_id
+Ref: fact_dosen_hibah.hibah_proposal_id > dim_hibah.hibah_proposal_id
+Ref: fact_sitasi.dosen_id > dim_dosen.dosen_id
+Ref: fact_sitasi.jurnal_id > dim_jurnal.jurnal_id
+Ref: fact_hibah.hibah_progress_id > dim_hibah_progress.hibah_proposal_id
+Ref: fact_hibah.hibah_final_id > dim_hibah_final.hibah_proposal_id
+Ref: fact_hibah.file_id > dim_file.file_id

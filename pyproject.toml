@@ -6,6 +6,22 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "boto3>=1.43.15",
+    "faker>=37.4.0",
+    "openpyxl>=3.1.5",
+    "pandas>=2.3.0",
+    "pdfplumber>=0.11.10",
     "python-dotenv>=1.2.2",
     "trino>=0.330.0",
 ]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
