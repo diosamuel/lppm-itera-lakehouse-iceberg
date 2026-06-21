@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo-lppm-baru-scaled.png" alt="LPPM ITERA" width="300"/>
+  <img src="assets/logo-lppm-baru-scaled.png" alt="LPPM ITERA" width="300"/>
 </p>
 
 <h1 align="center">LPPM ITERA Data Lakehouse</h1>
