@@ -28,7 +28,7 @@ for research_type in ["penelitian", "pengabdian"]:
             if not os.path.isfile(filepath):
                 continue
             for year in YEARS:
-                s3_key = f"pdf/{research_type}/{year}/{subfolder}/{filename}"
+                s3_key = f"{research_type}/{year}/pdf/{subfolder}/{filename}"
                 result = StorageS3.upload(filename=s3_key, filepath=filepath)
                 if result.get("status") == "success":
                     print(f"Uploaded: s3://sipaper/{s3_key}")
@@ -55,13 +55,13 @@ for file in list_directory:
         year = file.rsplit("_", 1)[1].split(".")[0]
         file_endpoint = None
         if research_type == "penelitian":
-            file_endpoint = f"/csv/penelitian/{year}/{file}"
+            file_endpoint = f"/penelitian/{year}/csv/{file}"
         elif research_type == "pengabdian":
-            file_endpoint = f"/csv/pengabdian/{year}/{file}"
+            file_endpoint = f"/pengabdian/{year}/csv/{file}"
         elif research_type == "buku_keilmuan":
-            file_endpoint = f"/csv/buku_keilmuan/{year}/{file}"
+            file_endpoint = f"/buku_keilmuan/{year}/csv/{file}"
         elif research_type == "sitasi":
-            file_endpoint = f"/csv/sitasi/{year}/{file}"
+            file_endpoint = f"/sitasi/{year}/csv/{file}"
 
         if file_endpoint is None:
             print(f"Skipping unrecognised file: {file}")
@@ -74,11 +74,11 @@ for file in list_directory:
 
 # --- Penelitian ---
 csv_penelitian = [
-    StorageS3.load("csv/penelitian/2021/penelitian_2021.csv"),
-    StorageS3.load("csv/penelitian/2022/penelitian_2022.csv"),
-    StorageS3.load("csv/penelitian/2023/penelitian_2023.csv"),
-    StorageS3.load("csv/penelitian/2024/penelitian_2024.csv"),
-    StorageS3.load("csv/penelitian/2025/penelitian_2025.csv"),
+    StorageS3.load("penelitian/2021/csv/penelitian_2021.csv"),
+    StorageS3.load("penelitian/2022/csv/penelitian_2022.csv"),
+    StorageS3.load("penelitian/2023/csv/penelitian_2023.csv"),
+    StorageS3.load("penelitian/2024/csv/penelitian_2024.csv"),
+    StorageS3.load("penelitian/2025/csv/penelitian_2025.csv"),
 ]
 
 res = (
@@ -95,11 +95,11 @@ print("Written silver.penelitian")
 
 # --- Pengabdian ---
 csv_pengabdian = [
-    StorageS3.load("csv/pengabdian/2021/pengabdian_2021.csv"),
-    StorageS3.load("csv/pengabdian/2022/pengabdian_2022.csv"),
-    StorageS3.load("csv/pengabdian/2023/pengabdian_2023.csv"),
-    StorageS3.load("csv/pengabdian/2024/pengabdian_2024.csv"),
-    StorageS3.load("csv/pengabdian/2025/pengabdian_2025.csv"),
+    StorageS3.load("pengabdian/2021/csv/pengabdian_2021.csv"),
+    StorageS3.load("pengabdian/2022/csv/pengabdian_2022.csv"),
+    StorageS3.load("pengabdian/2023/csv/pengabdian_2023.csv"),
+    StorageS3.load("pengabdian/2024/csv/pengabdian_2024.csv"),
+    StorageS3.load("pengabdian/2025/csv/pengabdian_2025.csv"),
 ]
 
 res = (
@@ -116,8 +116,8 @@ print("Written silver.pengabdian")
 
 # --- Buku Keilmuan ---
 csv_buku_keilmuan = [
-    StorageS3.load("csv/buku_keilmuan/2023/buku_keilmuan_2023.csv"),
-    StorageS3.load("csv/buku_keilmuan/2024/buku_keilmuan_2024.csv"),
+    StorageS3.load("buku_keilmuan/2023/csv/buku_keilmuan_2023.csv"),
+    StorageS3.load("buku_keilmuan/2024/csv/buku_keilmuan_2024.csv"),
 ]
 
 res = (
@@ -131,7 +131,7 @@ print("Written silver.buku_keilmuan")
 
 # --- Sitasi ---
 csv_sitasi = [
-    StorageS3.load("csv/sitasi/2026/sitasi_2026.csv"),
+    StorageS3.load("sitasi/2026/csv/sitasi_2026.csv"),
 ]
 
 res = Transform(spark=SparkSession, document_type="sitasi").processSitasiData(csv_sitasi[0]["path"], 2026).join()

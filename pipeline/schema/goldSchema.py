@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from pyiceberg.schema import Schema
 from pyiceberg.types import IntegerType, LongType, NestedField, StringType, TimestampType
 
-sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from setup_catalog import SetupIcebergCatalog
 from setup_spark import SetupSpark
@@ -162,9 +162,7 @@ GOLD_TABLES = [
 
 
 SparkSession = SetupSpark(app_name="init_gold", catalog_name="default")
-
 Catalog = SetupIcebergCatalog(catalog_name="default", namespace="gold").initialize()
-
 
 for table_name, schema in GOLD_TABLES:
     table = Catalog.create_replace_table(table_name, schema)

@@ -309,7 +309,7 @@ def main():
                 continue
 
             filename = f"{name_prefix}_{doc}_{skema_part}_{tahun}.pdf"
-            minio_key = f"pdf/{jenis}/{tahun}/{doc}/{filename}"
+            minio_key = f"{jenis}/{tahun}/pdf/{doc}/{filename}"
 
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
                 shutil.copy2(src_path, tmp.name)

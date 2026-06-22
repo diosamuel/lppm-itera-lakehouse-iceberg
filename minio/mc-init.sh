@@ -30,46 +30,28 @@ echo "[mc-init] Creating bucket 'sipaper'..."
 /usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper"
 /usr/bin/mc anonymous set public "${MC_ALIAS}/sipaper" >/dev/null 2>&1 || true
 
-echo "[mc-mb] make bucket & folder for pdf"
+echo "[mc-mb] Creating folder structure: /{jenis}/{year}/{filetype}"
 
-# pdf - penelitian
+# penelitian (2021-2025)
 for year in 2021 2022 2023 2024 2025; do
-    /usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/pdf/penelitian/${year}"
+    /usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/penelitian/${year}/pdf"
+    /usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/penelitian/${year}/csv"
 done
 
-# pdf - pengabdian
+# pengabdian (2021-2025)
 for year in 2021 2022 2023 2024 2025; do
-    /usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/pdf/pengabdian/${year}"
+    /usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/pengabdian/${year}/pdf"
+    /usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/pengabdian/${year}/csv"
 done
 
-# pdf - buku_keilmuan
+# buku_keilmuan (2023-2024)
 for year in 2023 2024; do
-    /usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/pdf/buku_keilmuan/${year}"
+    /usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/buku_keilmuan/${year}/pdf"
+    /usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/buku_keilmuan/${year}/csv"
 done
 
-# pdf - sitasi
-for year in 2026; do
-    /usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/pdf/sitasi/${year}"
-done
-
-
-# This is for csv
-# csv - penelitian
-for year in 2021 2022 2023 2024 2025; do
-    /usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/csv/penelitian/${year}"
-done
-
-# csv - pengabdian
-for year in 2021 2022 2023 2024 2025; do
-    /usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/csv/pengabdian/${year}"
-done
-
-# csv - buku_keilmuan
-for year in 2023 2024; do
-    /usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/csv/buku_keilmuan/${year}"
-done
-
-# csv - sitasi
-/usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/csv/sitasi/2026"
+# sitasi (2026)
+/usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/sitasi/2026/pdf"
+/usr/bin/mc mb --ignore-existing "${MC_ALIAS}/sipaper/sitasi/2026/csv"
 
 echo "[mc-init] MinIO initialization complete."
