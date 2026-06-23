@@ -35,6 +35,16 @@ for research_type in ["penelitian", "pengabdian"]:
                 else:
                     print(f"Skipped: s3://sipaper/{s3_key} ({result.get('message')})")
 
+# Initialize PDF folder structure
+DOC_TYPES = ["laporan_akhir", "laporan_kemajuan", "proposal"]
+
+for research_type in ["penelitian", "pengabdian"]:
+    for year in YEARS:
+        for doc_type in DOC_TYPES:
+            folder_key = f"{research_type}/{year}/pdf/{doc_type}/"
+            StorageS3.client.put_object(Bucket="sipaper", Key=folder_key, Body=b"")
+            print(f"Created folder: s3://sipaper/{folder_key}")
+
 # Initialize catalog and spark
 IcebergCatalog = SetupIcebergCatalog(
     catalog_name="default",

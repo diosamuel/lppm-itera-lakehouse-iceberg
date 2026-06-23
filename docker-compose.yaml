@@ -131,6 +131,7 @@ services:
       - AWS_REGION=us-east-1
     volumes:
       - ./minio/mc-init.sh:/mc-init.sh
+      - ./minio/mc-delete-all.sh:/mc-delete-all.sh
       - ./pipeline:/home/iceberg/pipeline
       - ./notebooks:/home/iceberg/notebooks
     entrypoint: ["/bin/sh", "/mc-init.sh"]
