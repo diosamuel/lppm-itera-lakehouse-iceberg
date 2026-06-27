@@ -4,9 +4,6 @@ from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
 import requests
-
-WEBHOOK_URL = "https://webhook.site/00a29596-c2bf-40d2-abb7-9ff1a23f84cf"
-
 def process():
     hook = S3Hook(aws_conn_id="minio_s3")
     client = hook.get_conn()
@@ -18,8 +15,6 @@ def process():
         "etag": response.get("ETag"),
     }
     print(f"File metadata: {metadata}")
-    resp = requests.post(WEBHOOK_URL, json=metadata)
-    print(f"Webhook response: {resp.status_code}")
 
 with DAG(
     dag_id="process_sipaper",
@@ -33,8 +28,8 @@ with DAG(
         bucket_name="sipaper",
         bucket_key="sipaper.xlsx",
         aws_conn_id="minio_s3",
-        poke_interval=5,
-        timeout=120,
+        poke_interval=60,
+        timeout=180,
         mode="poke"
     )
 
