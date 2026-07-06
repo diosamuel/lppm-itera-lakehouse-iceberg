@@ -32,7 +32,7 @@ class SetupIcebergCatalog:
         try:
             self.catalog.create_namespace_if_not_exists(ns)
         except Exception:
-            pass  # Namespace already exists, ignore
+            pass 
         print(f"Namespace '{ns}' ready.")
         return self.catalog
 

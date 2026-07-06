@@ -60,6 +60,10 @@ services:
     restart: always
     networks:
       iceberg_net:
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 384M
 
   spark-iceberg:
     image: tabulario/spark-iceberg
@@ -84,6 +88,10 @@ services:
       - 8080:8080
       - 10000:10000
       - 10001:10001
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 768M
 
   rest:
     image: apache/iceberg-rest-fixture
@@ -99,6 +107,10 @@ services:
       - CATALOG_WAREHOUSE=s3://warehouse/
       - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
       - CATALOG_S3_ENDPOINT=http://minio:9000
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 128M
 
   minio:
     image: minio/minio
@@ -117,6 +129,10 @@ services:
       - 9001:9001
       - 9000:9000
     command: ["server", "/data", "--console-address", ":9001"]
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 384M
 
   mc:
     depends_on:
@@ -146,6 +162,10 @@ services:
       start_period: 5s
     networks:
       iceberg_net:
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 128M
 
   superset-init:
     build: superset/
@@ -182,6 +202,10 @@ services:
       - 8088:8088
     networks:
       iceberg_net:
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 512M
 
   trino:
     container_name: lppm-trino
@@ -195,6 +219,10 @@ services:
       - minio
     networks:
       iceberg_net:
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 512M
 
   airflow-webserver:
     <<: *airflow-common
@@ -213,6 +241,10 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 384M
 
   airflow-scheduler:
     <<: *airflow-common
@@ -229,6 +261,10 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 384M
 
   airflow-init:
     <<: *airflow-common

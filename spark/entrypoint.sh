@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Licensed to the Apache Software Foundation (ASF) under one
+# Licensed to the Apache Software Foundation under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
 # regarding copyright ownership.  The ASF licenses this file
@@ -24,8 +24,22 @@ start-history-server.sh
 
 # Clean stale Derby metastore to avoid "Directory already exists" errors
 rm -rf /tmp/derby
+mkdir -p /tmp/derby
 
-start-thriftserver.sh  --driver-java-options "-Dderby.system.home=/tmp/derby"
+start-thriftserver.sh \
+  --conf spark.sql.catalogImplementation=in-memory \
+  --conf spark.sql.hive.server2.thrift.sasl.enabled=false \
+  --conf spark.sql.hive.server2.thrift.busy.wait.duration=0 \
+  --conf spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions \
+  --conf spark.sql.catalog.default=org.apache.iceberg.spark.SparkCatalog \
+  --conf spark.sql.catalog.default.type=rest \
+  --conf spark.sql.catalog.default.uri=http://rest:8181 \
+  --conf spark.sql.catalog.default.io-impl=org.apache.iceberg.aws.s3.S3FileIO \
+  --conf spark.sql.catalog.default.warehouse=s3://warehouse/ \
+  --conf spark.sql.catalog.default.s3.endpoint=http://minio:9000 \
+  --conf spark.sql.catalog.default.default-namespace=silver \
+  --conf spark.sql.defaultCatalog=default \
+  --driver-java-options "-Dderby.system.home=/tmp/derby"
 
 # Entrypoint, for example notebook, pyspark or spark-sql
 if [[ $# -gt 0 ]] ; then

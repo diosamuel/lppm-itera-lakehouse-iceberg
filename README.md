@@ -16,10 +16,19 @@
 |---------|-----|-------------|
 | Jupyter (Spark) | http://localhost:8888 | - |
 | Spark UI | http://localhost:8080 | - |
+| Spark Thrift Server | http://localhost:10000 | - |
+| Trino | http://localhost:8085 | `trino` |
 | Iceberg REST | http://localhost:8181 | - |
 | MinIO Console | http://localhost:9001 | `admin` / `password` |
 | Superset | http://localhost:8088 | `admin` / `admin` |
 | Airflow | http://localhost:8082 | `airflow` / `airflow` |
+
+## Query Engine Connections (Superset SQLAlchemy URI)
+
+| Engine | SQLAlchemy URI | Use case |
+|--------|----------------|----------|
+| Spark SQL (Thrift) | `hive://lppm-spark-iceberg:10000/silver` | WAP testing, Iceberg branches |
+| Trino | `trino://trino@lppm-trino:8085/default` | Dashboard queries (read-only) |
 
 ## Prerequisites
 
@@ -76,3 +85,11 @@ docker compose down -v
 ├── warehouse/      # Local Iceberg warehouse
 └── docker-compose.yaml
 ```
+
+
+# Fokus hari ini
+1. ekstrak dokumen
+2. buat tabel fakta
+3. bikin dashboard
+
+Total pendanaan : 128.909.280.121 (~129M)

@@ -212,3 +212,4 @@ spark-warehouse/
 # Airflow
 airflow/logs/
 airflow/.env
+.bruin.yml
