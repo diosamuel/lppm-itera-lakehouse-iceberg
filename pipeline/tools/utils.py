@@ -362,6 +362,16 @@ def standarizingNamaDosen(text):
     return text or None
 
 
+def normalizeWhitespace(text):
+    """Trim and collapse all internal whitespace runs into a single space."""
+    text = removeNaN(text)
+    if text is None:
+        return None
+    text = str(text).strip()
+    text = re.sub(r"\s+", " ", text)
+    return text or None
+
+
 # user define function spark
 removeNaN_udf = F.udf(removeNaN, StringType())
 match_unique_id_udf = F.udf(matchUniqueID, ArrayType(StringType()))
@@ -374,3 +384,4 @@ capture_doi_udf = F.udf(captureDOI, StringType())
 normalize_date_udf = F.udf(normalizeDate, normalizeDateSchema)
 clean_tanggal_udf = F.udf(cleanTanggal, cleanTanggalSchema)
 standarizing_journal_udf = F.udf(standarizingJournal, standarizingJournalSchema)
+normalize_whitespace_udf = F.udf(normalizeWhitespace, StringType())

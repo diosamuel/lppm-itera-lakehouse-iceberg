@@ -94,12 +94,16 @@ services:
     #       memory: 768M
 
   rest:
-    image: apache/iceberg-rest-fixture
+    image: apache/iceberg-rest-fixture:1.10.1
     container_name: lppm-iceberg-rest
     networks:
       iceberg_net:
     ports:
       - 8181:8181
+    # Run as root: the fixture image runs as uid 1000 by default,
+    # but the Docker volume /var/lib/iceberg is owned by root and
+    # SQLite needs to create -journal/-wal files in that directory.
+    user: "0:0"
     environment:
       - AWS_ACCESS_KEY_ID=admin
       - AWS_SECRET_ACCESS_KEY=password
@@ -107,6 +111,12 @@ services:
       - CATALOG_WAREHOUSE=s3://warehouse/
       - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
       - CATALOG_S3_ENDPOINT=http://minio:9000
+      # Persist the JDBC catalog (SQLite) across restarts instead of /tmp
+      - CATALOG_URI=jdbc:sqlite:/var/lib/iceberg/rest_catalog.db
+      - CATALOG_CATALOG__IMPL=org.apache.iceberg.jdbc.JdbcCatalog
+      - CATALOG_JDBC__STRICT__MODE=true
+    volumes:
+      - iceberg-rest-catalog:/var/lib/iceberg
     # deploy:
     #   resources:
     #     limits:
@@ -303,3 +313,4 @@ networks:
 volumes:
   shared-postgres-data:
   airflow-logs:
+  iceberg-rest-catalog:

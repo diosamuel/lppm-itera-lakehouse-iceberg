@@ -44,7 +44,7 @@ WORKDIR ${SPARK_HOME}
 
 ENV SPARK_VERSION=3.5.6
 ENV SPARK_MAJOR_VERSION=3.5
-ENV ICEBERG_VERSION=1.9.0
+ENV ICEBERG_VERSION=1.10.1
 
 # Download spark (with local fallback)
 COPY bin/spark-3.5.6-bin-hadoop3.tgz /tmp/spark-local.tgz

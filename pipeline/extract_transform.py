@@ -9,6 +9,7 @@ from tools.utils import (
     map_faculty_degree_udf,
     match_name_udf,
     match_unique_id_udf,
+    normalize_whitespace_udf,
     removeNaN_udf,
     standarizing_journal_udf,
 )
@@ -87,6 +88,8 @@ class Transform:
             .withColumn("nip_anggota_dosen", match_unique_id_udf(F.col("anggota_dosen")))
             .withColumn("nama_anggota_dosen", match_name_udf(F.col("anggota_dosen")))
             .withColumn("advisor", match_name_udf(F.col("advisor"))[0])
+            .withColumn("skema", normalize_whitespace_udf(F.col("skema")))
+            .withColumn("sdgs", normalize_whitespace_udf(F.col("sdgs")))
             .drop("program_studi", "anggota_dosen", "anggota_mahasiswa")
             .replace(float("nan"), None)
             .replace("", None)
@@ -132,5 +135,6 @@ class Transform:
         result = self._batches[0]
         for batch in self._batches[1:]:
             result = result.unionByName(batch, allowMissingColumns=True)
+        result = result.withColumn("id", F.monotonically_increasing_id())
         self._batches = []
         return result
