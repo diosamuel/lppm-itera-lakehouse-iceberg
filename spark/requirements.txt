@@ -1,6 +1,6 @@
 jupyter==1.1.1
 spylon-kernel==0.4.1
-pyiceberg[pyarrow,duckdb,pandas,hive]==0.9.1
+pyiceberg[pyarrow,duckdb,pandas,hive]==0.11.1
 openpyxl
 python-dotenv
 boto3
