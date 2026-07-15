@@ -1,0 +1,252 @@
+version: 2
+
+sources:
+  - name: bronze
+    database: default
+    schema: bronze
+    description: tabel from minio s3
+    tables:
+      - name: penelitian
+        description: Raw research grant records.
+      - name: pengabdian
+        description: Raw community service records.
+      - name: buku_keilmuan
+        description: Raw book records.
+      - name: sitasi
+        description: Raw citation records.
+  - name: silver
+    database: default
+    schema: silver
+    description: Cleaned source tables produced by the ingestion and transformation pipeline.
+    tables:
+      - name: penelitian
+        description: Cleaned research grant records.
+        columns: &hibah_columns
+          - name: id
+            description: Manual description goes here.
+          - name: judul_proposal
+            description: Manual description goes here.
+          - name: ketua_peneliti
+            description: Manual description goes here.
+          - name: jenis
+            description: Manual description goes here.
+          - name: status
+            description: Manual description goes here.
+          - name: skema
+            description: Manual description goes here.
+          - name: scope
+            description: Manual description goes here.
+          - name: sdgs
+            description: Manual description goes here.
+          - name: usulan_biaya
+            description: Manual description goes here.
+          - name: status_proposal
+            description: Manual description goes here.
+          - name: tahun
+            description: Manual description goes here.
+          - name: prodi
+            description: Manual description goes here.
+          - name: fakultas
+            description: Manual description goes here.
+          - name: nip_ketua_peneliti
+            description: Manual description goes here.
+          - name: nim_anggota_mahasiswa
+            description: Manual description goes here.
+          - name: nama_anggota_mahasiswa
+            description: Manual description goes here.
+          - name: nip_anggota_dosen
+            description: Manual description goes here.
+          - name: nama_anggota_dosen
+            description: Manual description goes here.
+          - name: advisor
+            description: Manual description goes here.
+
+      - name: pengabdian
+        description: Cleaned community service grant records.
+        columns: *hibah_columns
+
+      - name: buku_keilmuan
+        description: Cleaned scholarly book grant records.
+        columns: *hibah_columns
+
+      - name: sitasi
+        description: Cleaned publication and citation records.
+        columns:
+          - name: id
+            description: Manual description goes here.
+          - name: prodi
+            description: Manual description goes here.
+          - name: fakultas
+            description: Manual description goes here.
+          - name: ketua_peneliti
+            description: Manual description goes here.
+          - name: judul_proposal
+            description: Manual description goes here.
+          - name: sitasi
+            description: Manual description goes here.
+          - name: triwulan
+            description: Manual description goes here.
+          - name: publikasi
+            description: Manual description goes here.
+          - name: doi
+            description: Manual description goes here.
+          - name: tanggal_terbit_hari
+            description: Manual description goes here.
+          - name: tanggal_terbit_bulan
+            description: Manual description goes here.
+          - name: tanggal_terbit_tahun
+            description: Manual description goes here.
+          - name: tanggal_terbit_timestamp
+            description: Manual description goes here.
+          - name: jurnal
+            description: Manual description goes here.
+          - name: jurnal_kategori
+            description: Manual description goes here.
+
+      - name: lookup_skema
+        description: "{{ doc('lookup') }}"
+        columns:
+          - name: skema
+            description: Manual description goes here.
+        
+
+      - name: lookup_sdgs
+        description: Manual lookup for SDGs normalization.
+        columns:
+          - name: sdgs
+            description: Manual description goes here.
+
+  - name: gold
+    database: default
+    schema: gold
+    description: Analytics tables used for reporting and dashboarding.
+    tables:
+      - name: dim_dosen
+        description: Lecturer dimension.
+        columns:
+          - name: dosen_id
+            description: Manual description goes here.
+          - name: nip
+            description: Manual description goes here.
+          - name: nama
+            description: Manual description goes here.
+          - name: prodi
+            description: Manual description goes here.
+          - name: fakultas
+            description: Manual description goes here.
+
+      - name: dim_skema
+        description: Grant scheme dimension.
+        columns:
+          - name: skema_id
+            description: Manual description goes here.
+          - name: nama_skema
+            description: Manual description goes here.
+          - name: pendanaan_maks
+            description: Manual description goes here.
+
+      - name: dim_sdgs
+        description: SDGs dimension.
+        columns:
+          - name: sdgs_id
+            description: Manual description goes here.
+          - name: kode_sdgs
+            description: Manual description goes here.
+          - name: deskripsi
+            description: Manual description goes here.
+          - name: is_utama
+            description: Manual description goes here.
+          - name: is_unggulan
+            description: Manual description goes here.
+
+      - name: dim_jurnal
+        description: Journal dimension.
+        columns:
+          - name: jurnal_id
+            description: Manual description goes here.
+          - name: nama_jurnal
+            description: Manual description goes here.
+          - name: rank_jurnal
+            description: Manual description goes here.
+          - name: kategori_jurnal
+            description: Manual description goes here.
+
+      - name: dim_hibah
+        description: Grant dimension.
+        columns:
+          - name: hibah_id
+            description: Manual description goes here.
+          - name: judul_proposal
+            description: Manual description goes here.
+          - name: jenis
+            description: Manual description goes here.
+          - name: status
+            description: Manual description goes here.
+          - name: tahun
+            description: Manual description goes here.
+          - name: total_mahasiswa
+            description: Manual description goes here.
+
+      - name: fact_hibah
+        description: Grant fact table.
+        columns:
+          - name: hibah_fact_id
+            description: Manual description goes here.
+          - name: hibah_id
+            description: Manual description goes here.
+          - name: hibah_final_id
+            description: Manual description goes here.
+          - name: hibah_progress_id
+            description: Manual description goes here.
+          - name: ketua_id
+            description: Manual description goes here.
+          - name: skema_id
+            description: Manual description goes here.
+          - name: sdgs_id
+            description: Manual description goes here.
+          - name: usulan_biaya
+            description: Manual description goes here.
+
+      - name: fact_dosen_hibah
+        description: Lecturer participation fact table.
+        columns:
+          - name: id
+            description: Manual description goes here.
+          - name: dosen_id
+            description: Manual description goes here.
+          - name: hibah_id
+            description: Manual description goes here.
+          - name: tahun
+            description: Manual description goes here.
+          - name: role
+            description: Manual description goes here.
+          - name: jumlah
+            description: Manual description goes here.
+          - name: jenis
+            description: Manual description goes here.
+          - name: status_hibah
+            description: Manual description goes here.
+
+      - name: fact_sitasi
+        description: Citation fact table.
+        columns:
+          - name: sitasi_fact_id
+            description: Manual description goes here.
+          - name: dosen_id
+            description: Manual description goes here.
+          - name: jurnal_id
+            description: Manual description goes here.
+          - name: tahun
+            description: Manual description goes here.
+          - name: bulan
+            description: Manual description goes here.
+          - name: hari
+            description: Manual description goes here.
+          - name: sitasi
+            description: Manual description goes here.
+          - name: jumlah_publikasi
+            description: Manual description goes here.
+          - name: doi
+            description: Manual description goes here.
+          - name: triwulan
+            description: Manual description goes here.

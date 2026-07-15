@@ -12,6 +12,7 @@ from tools.utils import (
     normalize_whitespace_udf,
     removeNaN_udf,
     standarizing_journal_udf,
+    remove_non_alphanumeric_udf
 )
 
 load_dotenv()
@@ -88,8 +89,8 @@ class Transform:
             .withColumn("nip_anggota_dosen", match_unique_id_udf(F.col("anggota_dosen")))
             .withColumn("nama_anggota_dosen", match_name_udf(F.col("anggota_dosen")))
             .withColumn("advisor", match_name_udf(F.col("advisor"))[0])
-            .withColumn("skema", normalize_whitespace_udf(F.col("skema")))
-            .withColumn("sdgs", normalize_whitespace_udf(F.col("sdgs")))
+            .withColumn("skema", remove_non_alphanumeric_udf(F.col("skema")))
+            .withColumn("sdgs", remove_non_alphanumeric_udf(F.col("sdgs")))
             .drop("program_studi", "anggota_dosen", "anggota_mahasiswa")
             .replace(float("nan"), None)
             .replace("", None)
@@ -135,6 +136,5 @@ class Transform:
         result = self._batches[0]
         for batch in self._batches[1:]:
             result = result.unionByName(batch, allowMissingColumns=True)
-        result = result.withColumn("id", F.monotonically_increasing_id())
         self._batches = []
         return result

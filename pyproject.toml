@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "boto3>=1.43.15",
+    "dbt-core>=1.11.12",
+    "dbt-trino>=1.10.2",
     "faker>=37.4.0",
     "openpyxl>=3.1.5",
     "pandas>=2.3.0",

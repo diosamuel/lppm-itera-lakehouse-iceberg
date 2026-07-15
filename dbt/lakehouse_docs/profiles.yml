@@ -1,0 +1,24 @@
+lakehouse_docs:
+  target: dev
+  outputs:
+    dev:
+      type: trino
+      method: none
+      user: "{{ env_var('TRINO_USER', 'trino') }}"
+      host: "{{ env_var('TRINO_HOST', 'localhost') }}"
+      port: "{{ env_var('TRINO_PORT', '8085') | int }}"
+      catalog: "{{ env_var('TRINO_CATALOG', 'default') }}"
+      schema: "{{ env_var('TRINO_SCHEMA', 'gold') }}"
+      http_scheme: http
+      threads: 4
+
+    docker:
+      type: trino
+      method: none
+      user: "{{ env_var('TRINO_USER', 'trino') }}"
+      host: "{{ env_var('TRINO_HOST_DOCKER', 'lppm-trino') }}"
+      port: "{{ env_var('TRINO_PORT', '8085') | int }}"
+      catalog: "{{ env_var('TRINO_CATALOG', 'default') }}"
+      schema: "{{ env_var('TRINO_SCHEMA', 'gold') }}"
+      http_scheme: http
+      threads: 4

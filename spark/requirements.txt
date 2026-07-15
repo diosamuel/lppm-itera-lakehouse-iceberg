@@ -2,7 +2,7 @@ jupyter==1.1.1
 spylon-kernel==0.4.1
 pyiceberg[pyarrow,duckdb,pandas,hive]==0.9.1
 openpyxl
-dotenv
+python-dotenv
 boto3
 pdfplumber
 trino

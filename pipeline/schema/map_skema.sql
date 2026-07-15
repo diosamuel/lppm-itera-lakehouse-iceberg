@@ -1,4 +1,4 @@
--- CREATE TABLE skema_mapping AS
+-- CREATE TABLE lookup_skema AS
 -- WITH skema_tb AS (
 --     SELECT skema
 --     FROM silver.penelitian
@@ -29,12 +29,10 @@
 --    OR lower(skema) LIKE '%pkm%'
 -- ORDER BY skema DESC;
 
--- INSERT INTO SKEMA (skema) VALUES ('GBU 45'),('Kolaborasi'),('Skema Penelitian Penugasan'),('Program Penelitian Dasar'),('Program Penelitian Dosen Pemula'),('Program Penelitian Penugasan'),('Madya'),('PDP (Pemula)')
-
-CREATE TABLE skema_mapping (
+CREATE TABLE lookup_skema (
     skema VARCHAR
 )
-INSERT INTO skema_mapping (skema)
+INSERT INTO lookup_skema (skema)
 VALUES ('Skema Penugasan'),
        ('GBU 45'),
        ('Kolaborasi'),

@@ -1,4 +1,4 @@
--- CREATE TABLE sdgs_mapping AS
+-- CREATE TABLE lookup_sdgs AS
 -- WITH sdgs AS (
 --     SELECT sdgs FROM silver.penelitian
 --     UNION
@@ -10,8 +10,8 @@
 -- FROM sdgs
 -- WHERE sdgs LIKE '%SDG%';
 
-CREATE TABLE sdgs_mapping (sdgs VARCHAR) 
-INSERT INTO sdgs_mapping (sdgs)
+CREATE TABLE lookup_sdgs (sdgs VARCHAR)
+INSERT INTO lookup_sdgs (sdgs)
 VALUES ('SDG 4: Quality education'),
        ('SDG 11: Sustainable cities and communities'),
        ('SDG 3: Good health and well-being'),

@@ -125,7 +125,7 @@ def matchNames(text):
 
 
 def getProdi(text):
-    mapper = {
+    lookup = {
         "SAP": "SAINS ATMOSFER DAN KEPLANETAN",
         "TEKNIK KIMA": "TEKNIK KIMIA",
     }
@@ -140,7 +140,7 @@ def getProdi(text):
         result = parts[1].strip().upper()
     else:
         result = text.upper()
-    return mapper.get(result, result)
+    return lookup.get(result, result)
 
 
 def getFaculty(text):
@@ -148,17 +148,17 @@ def getFaculty(text):
     if text is None:
         return None
 
-    mapper = {
+    lookup = {
         "FS": "Fakultas Sains",
         "FTI": "Fakultas Teknologi Industri",
         "FTIK": "Fakultas Teknologi Industri dan Kewilayahan",
     }
 
-    if text in mapper:
-        return mapper[text]
+    if text in lookup:
+        return lookup[text]
 
     key = text.split("-")[0].strip()
-    return mapper.get(key)
+    return lookup.get(key)
 
 
 def mapFacultyDegree(prodi):
@@ -166,7 +166,7 @@ def mapFacultyDegree(prodi):
     if prodi is None:
         return None
 
-    mapper = {
+    lookup = {
         "Fakultas Sains": [
             "biologi",
             "fisika",
@@ -217,7 +217,7 @@ def mapFacultyDegree(prodi):
         ],
     }
 
-    for key, programs in mapper.items():
+    for key, programs in lookup.items():
         if prodi in programs:
             return key.upper()
     return None
@@ -371,6 +371,8 @@ def normalizeWhitespace(text):
     text = re.sub(r"\s+", " ", text)
     return text or None
 
+def removeNonAlphanumeric(text):
+    return normalizeWhitespace(re.sub(r"[^a-zA-Z0-9\s]", " ",str(text).strip()))
 
 # user define function spark
 removeNaN_udf = F.udf(removeNaN, StringType())
@@ -385,3 +387,4 @@ normalize_date_udf = F.udf(normalizeDate, normalizeDateSchema)
 clean_tanggal_udf = F.udf(cleanTanggal, cleanTanggalSchema)
 standarizing_journal_udf = F.udf(standarizingJournal, standarizingJournalSchema)
 normalize_whitespace_udf = F.udf(normalizeWhitespace, StringType())
+remove_non_alphanumeric_udf = F.udf(removeNonAlphanumeric, StringType())
