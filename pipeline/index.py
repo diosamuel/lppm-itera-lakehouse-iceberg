@@ -86,7 +86,7 @@ for file in list_directory:
             filepath=f"/home/iceberg/notebooks/data/{file}",
         )
 
-# --- Penelitian ---
+# Penelitian
 csv_penelitian = [
     StorageS3.load("penelitian/2021/csv/penelitian_2021.csv"),
     StorageS3.load("penelitian/2022/csv/penelitian_2022.csv"),
@@ -111,7 +111,7 @@ res = res.withColumn(
 res.writeTo("silver.penelitian").createOrReplace()
 print("Written silver.penelitian")
 
-# --- Pengabdian ---
+# Pengabdian
 csv_pengabdian = [
     StorageS3.load("pengabdian/2021/csv/pengabdian_2021.csv"),
     StorageS3.load("pengabdian/2022/csv/pengabdian_2022.csv"),
@@ -136,7 +136,7 @@ res = res.withColumn(
 res.writeTo("silver.pengabdian").createOrReplace()
 print("Written silver.pengabdian")
 
-# --- Buku Keilmuan ---
+# Buku Keilmuan
 csv_buku_keilmuan = [
     StorageS3.load("buku_keilmuan/2023/csv/buku_keilmuan_2023.csv"),
     StorageS3.load("buku_keilmuan/2024/csv/buku_keilmuan_2024.csv"),
@@ -155,7 +155,7 @@ res = res.withColumn(
 res.writeTo("silver.buku_keilmuan").createOrReplace()
 print("Written silver.buku_keilmuan")
 
-# --- Sitasi ---
+# Sitasi
 csv_sitasi = [
     StorageS3.load("sitasi/2026/csv/sitasi_2026.csv"),
 ]
@@ -168,7 +168,7 @@ res = res.withColumn(
 res.writeTo("silver.sitasi").createOrReplace()
 print("Written silver.sitasi")
 
-# --- Skema Mapping ---
+# Skema Mapping
 skema_values = [
     ("Skema Penugasan",),
     ("GBU 45",),
@@ -203,7 +203,7 @@ skema_df = SparkSession.createDataFrame(skema_values, schema=skema_schema)
 skema_df.writeTo("silver.lookup_skema").createOrReplace()
 print("Written silver.lookup_skema")
 
-# --- SDGs Mapping ---
+#  SDGs Mapping 
 sdgs_values = [
     ("SDG 4 Quality education",),
     ("SDG 11 Sustainable cities and communities",),

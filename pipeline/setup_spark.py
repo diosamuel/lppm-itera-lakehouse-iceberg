@@ -14,7 +14,6 @@ class SetupSpark:
         self.s3_endpoint = os.getenv("MINIO_ENDPOINT_URL", "http://minio:9000")
         self.access_key = os.getenv("MINIO_ACCESS_KEY", "admin")
         self.secret_key = os.getenv("MINIO_SECRET_KEY", "password")
-
         self.spark = None
 
     def initialize(self):
