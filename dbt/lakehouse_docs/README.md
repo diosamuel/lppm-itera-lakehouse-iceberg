@@ -13,7 +13,7 @@ Generate docs from the host machine:
 
 ```bash
 uv run dbt docs generate --project-dir dbt/lakehouse_docs --profiles-dir dbt/lakehouse_docs
-uv run dbt docs serve --project-dir dbt/lakehouse_docs --profiles-dir dbt/lakehouse_docs
+uv run dbt docs serve --project-dir dbt/lakehouse_docs --profiles-dir dbt/lakehouse_docs --port 8090
 ```
 
 If you only want the manually typed docs and do not want dbt to query Trino for

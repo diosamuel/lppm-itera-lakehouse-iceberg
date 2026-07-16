@@ -4,23 +4,53 @@ sources:
   - name: bronze
     database: default
     schema: bronze
-    description: tabel from minio s3
+    description: Raw data located in Minio S3
     tables:
       - name: penelitian
-        description: Raw research grant records.
+        description: "{{ doc('bronze_penelitian') }}"
+        columns: &raw_hibah_columns
+          - name: judul_proposal
+            description: Judul Proposal
+          - name: ketua_peneliti
+            description: Ketua Peneliti
+          - name: jenis
+            description: Jenis hibah (penelitian, pengabdian, buku keilmuan)
+          - name: status
+            description: Status hibah (diterima, ditolak, diusulkan)
+          - name: skema
+            description: Skema (terlampir)
+          - name: scope
+            description: Scope (variatif)
+          - name: sdgs
+            description: SDGs (terlampir)
+          - name: prodi
+            description: Program studi
+          - name: anggota_dosen
+            description: Anggota dosen (nama dan/atau NIP)
+          - name: anggota_mahasiswa
+            description: Anggota mahasiswa (nama dan/atau NIM)
+          - name: advisor
+            description: Advisor name
+          - name: usulan_biaya
+            description: Biaya ajuan proposal
+          - name: status_proposal
+            description: Proposal status (sudah upload, belum upload)
       - name: pengabdian
-        description: Raw community service records.
+        columns: *raw_hibah_columns
+        description: "{{ doc('bronze_pengabdian') }}"
       - name: buku_keilmuan
-        description: Raw book records.
+        columns: *raw_hibah_columns
+        description: "{{ doc('bronze_buku_keilmuan') }}"
       - name: sitasi
-        description: Raw citation records.
+        columns: *raw_hibah_columns
+        description: "{{ doc('bronze_sitasi') }}"
   - name: silver
     database: default
     schema: silver
     description: Cleaned source tables produced by the ingestion and transformation pipeline.
     tables:
       - name: penelitian
-        description: Cleaned research grant records.
+        description: "{{ doc('silver_penelitian') }}"
         columns: &hibah_columns
           - name: id
             description: Manual description goes here.
@@ -62,15 +92,15 @@ sources:
             description: Manual description goes here.
 
       - name: pengabdian
-        description: Cleaned community service grant records.
+        description: "{{ doc('silver_pengabdian') }}"
         columns: *hibah_columns
 
       - name: buku_keilmuan
-        description: Cleaned scholarly book grant records.
+        description: "{{ doc('silver_buku_keilmuan') }}"
         columns: *hibah_columns
 
       - name: sitasi
-        description: Cleaned publication and citation records.
+        description: "{{ doc('silver_sitasi') }}"
         columns:
           - name: id
             description: Manual description goes here.
@@ -104,17 +134,17 @@ sources:
             description: Manual description goes here.
 
       - name: lookup_skema
-        description: "{{ doc('lookup') }}"
+        description: "{{ doc('lookup_skema_docs') }}"
         columns:
           - name: skema
-            description: Manual description goes here.
-        
+            description: daftar skema terlampir
+
 
       - name: lookup_sdgs
-        description: Manual lookup for SDGs normalization.
+        description: "{{ doc('lookup_sdgs_docs') }}"
         columns:
           - name: sdgs
-            description: Manual description goes here.
+            description: daftar sdgs terlampir
 
   - name: gold
     database: default
@@ -122,7 +152,7 @@ sources:
     description: Analytics tables used for reporting and dashboarding.
     tables:
       - name: dim_dosen
-        description: Lecturer dimension.
+        description: "{{ doc('gold_dim_dosen') }}"
         columns:
           - name: dosen_id
             description: Manual description goes here.
@@ -136,7 +166,7 @@ sources:
             description: Manual description goes here.
 
       - name: dim_skema
-        description: Grant scheme dimension.
+        description: "{{ doc('gold_dim_skema') }}"
         columns:
           - name: skema_id
             description: Manual description goes here.
@@ -146,7 +176,7 @@ sources:
             description: Manual description goes here.
 
       - name: dim_sdgs
-        description: SDGs dimension.
+        description: "{{ doc('gold_dim_sdgs') }}"
         columns:
           - name: sdgs_id
             description: Manual description goes here.
@@ -160,7 +190,7 @@ sources:
             description: Manual description goes here.
 
       - name: dim_jurnal
-        description: Journal dimension.
+        description: "{{ doc('gold_dim_jurnal') }}"
         columns:
           - name: jurnal_id
             description: Manual description goes here.
@@ -171,24 +201,8 @@ sources:
           - name: kategori_jurnal
             description: Manual description goes here.
 
-      - name: dim_hibah
-        description: Grant dimension.
-        columns:
-          - name: hibah_id
-            description: Manual description goes here.
-          - name: judul_proposal
-            description: Manual description goes here.
-          - name: jenis
-            description: Manual description goes here.
-          - name: status
-            description: Manual description goes here.
-          - name: tahun
-            description: Manual description goes here.
-          - name: total_mahasiswa
-            description: Manual description goes here.
-
       - name: fact_hibah
-        description: Grant fact table.
+        description: "{{ doc('gold_fact_hibah') }}"
         columns:
           - name: hibah_fact_id
             description: Manual description goes here.
@@ -208,7 +222,7 @@ sources:
             description: Manual description goes here.
 
       - name: fact_dosen_hibah
-        description: Lecturer participation fact table.
+        description: "{{ doc('gold_fact_dosen_hibah') }}"
         columns:
           - name: id
             description: Manual description goes here.
@@ -228,7 +242,7 @@ sources:
             description: Manual description goes here.
 
       - name: fact_sitasi
-        description: Citation fact table.
+        description: "{{ doc('gold_fact_sitasi') }}"
         columns:
           - name: sitasi_fact_id
             description: Manual description goes here.

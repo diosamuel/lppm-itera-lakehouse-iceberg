@@ -1,20 +1,7 @@
 {% docs bronze_pengabdian %}
 
-## Bronze Layer: Raw Pengabdian Data
+## Data Pengabdian Mentah
 
-This model represents the raw ingestion of community service grant data from MinIO S3.
-
-### Data Flow
-```
-bronze.pengabdian (S3) → bronze_pengabdian (ephemeral)
-```
-
-### Source
-- **Source**: `bronze.pengabdian` table from MinIO S3
-- **Layer**: Bronze (raw ingestion)
-- **Materialization**: Ephemeral (in-memory)
-
-### Columns
-Same schema as bronze_penelitian (sharing hibah_columns in sources.yml)
+Data pengabdian berbentuk file csv yang berasal dari tarikan data sistem SIPAPER ITERA. File csv ini ditempatkan pada layanan Storage opensource yaitu MinIO S3
 
 {% enddocs %}
