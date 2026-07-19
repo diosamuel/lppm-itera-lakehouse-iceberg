@@ -1,29 +1,17 @@
 {% docs gold_fact_dosen_hibah %}
 
-## Gold Layer: Lecturer Participation Fact Table
+# Gold Layer: Table fakta dosen dengan hibah
 
-This model tracks lecturer participation in research grants.
+Tabel fakta ini digunakan untuk menganalisis keterlibatan setiap dosen dalam kegiatan hibah berdasarkan peran atau posisi keanggotaannya.
+Grain detail atau tingkat granularitas dari tabel ini adalah 1 baris merepresentasikan 1 dosen yang terlibat dalam 1 hibah tertentu.
 
-### Data Flow
-```
-silver_deduped → gold_fact_dosen_hibah (table)
-```
+contoh isi dari tabel fakta
+| id | dosen_id | dosen | hibah_proposal_id | tahun | role | jenis_hibah | status_hibah |
+|---|---|---|---|---|---|---|---|
+| 1 | 96 | Jane Smith | BUKU_KEILMUAN-1 | 2023 | ketua | buku_keilmuan | ditolak |
+| 2 | 113 | Michael Brown | BUKU_KEILMUAN-1 | 2023 | anggota | buku_keilmuan | ditolak |
+| 3 | 790 | Emily Johnson | BUKU_KEILMUAN-10 | 2023 | ketua | buku_keilmuan | diterima |
+| 4 | 209 | David Wilson | BUKU_KEILMUAN-11 | 2024 | anggota | buku_keilmuan | diterima |
 
-### Dependencies
-- ``silver_deduped``
-
-### Transformations
-1. Generate surrogate key combining lecturer NIP and grant ID
-2. Create references to lecturer and grant dimension tables
-3. Track participation role and count
-
-### Surrogate Keys
-- `id`: `MD5(NIP || ID)` - unique participation identifier
-- `dosen_id`: Reference to `gold_dim_dosen`
-- `hibah_id`: Reference to `gold_dim_hibah`
-
-### Fact Measures
-- `jumlah`: Count of lecturer participation (always 1 per record)
-- `role`: Lecturer role in the grant
 
 {% enddocs %}

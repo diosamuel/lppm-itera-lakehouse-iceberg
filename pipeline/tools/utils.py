@@ -374,6 +374,35 @@ def normalizeWhitespace(text):
 def removeNonAlphanumeric(text):
     return normalizeWhitespace(re.sub(r"[^a-zA-Z0-9\s]", " ",str(text).strip()))
 
+def map_skema(skema: str):
+    SKEMA_MAPPING = {
+        "Program Kemitraan Masyarakat PKM maks Rp 10 000 000":
+            "Program Kemitraan Masyarakat (PKM)",
+
+        "Program Layanan Kepakaran dan Pembelajaran Masyarakat":
+            "Program Layanan Kepakaran dan Pembelajaran Masyarakat (LKPM)",
+
+        "Program Layanan Kepakaran dan Pembelajaran Masyarakat LKPM":
+            "Program Layanan Kepakaran dan Pembelajaran Masyarakat (LKPM)",
+
+        "Program Pengabdian Penugasan PPP":
+            "Program Pengabdian Penugasan (PPP)",
+
+        "Program Penguatan Kelompok Keilmuan PKK":
+            "Program Penguatan Kelompok Keilmuan (PKK)",
+
+        "Program pemberdayaan dan pembelajaran masyarakat PPM maks Rp 7 500 000":
+            "Program Pemberdayaan dan Pembelajaran Masyarakat (PPM)",
+
+        "Program pengembangan produk unggulan daerah PPUD maks Rp 15 000 000":
+            "Program Pengembangan Produk Unggulan Daerah (PPUD)",
+
+        "Program teknologi tepat guna TTG maks Rp 20 000 000":
+            "Program Teknologi Tepat Guna (TTG)",
+    }
+
+    return SKEMA_MAPPING.get(skema, skema)
+
 # user define function spark
 removeNaN_udf = F.udf(removeNaN, StringType())
 match_unique_id_udf = F.udf(matchUniqueID, ArrayType(StringType()))
@@ -388,3 +417,4 @@ clean_tanggal_udf = F.udf(cleanTanggal, cleanTanggalSchema)
 standarizing_journal_udf = F.udf(standarizingJournal, standarizingJournalSchema)
 normalize_whitespace_udf = F.udf(normalizeWhitespace, StringType())
 remove_non_alphanumeric_udf = F.udf(removeNonAlphanumeric, StringType())
+map_skema_udf = F.udf(map_skema, StringType())

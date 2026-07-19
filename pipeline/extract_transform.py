@@ -12,12 +12,11 @@ from tools.utils import (
     normalize_whitespace_udf,
     removeNaN_udf,
     standarizing_journal_udf,
-    remove_non_alphanumeric_udf
+    remove_non_alphanumeric_udf,
+    map_skema_udf
 )
 
 load_dotenv()
-
-
 class Transform:
     RENAME_MAPS = {
         "penelitian": {
@@ -90,7 +89,9 @@ class Transform:
             .withColumn("nama_anggota_dosen", match_name_udf(F.col("anggota_dosen")))
             .withColumn("advisor", match_name_udf(F.col("advisor"))[0])
             .withColumn("skema", remove_non_alphanumeric_udf(F.col("skema")))
+            .withColumn("skema", map_skema_udf(F.col("skema")))
             .withColumn("sdgs", remove_non_alphanumeric_udf(F.col("sdgs")))
+            .withColumn("sdgs", map_skema_udf(F.col("sdgs")))
             .drop("program_studi", "anggota_dosen", "anggota_mahasiswa")
             .replace(float("nan"), None)
             .replace("", None)

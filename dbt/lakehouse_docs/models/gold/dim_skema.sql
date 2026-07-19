@@ -1,4 +1,4 @@
 {{ config(materialized='view') }}
 
 select *
-from {{ ref('lookup_skema') }}
+from {{ ref('hibah_lengkap') }}

@@ -1,115 +1,32 @@
 from collections import Counter
 from difflib import SequenceMatcher
 from pathlib import Path
+import re
 
 import pdfplumber
 
-SECTION_PROPOSAL_MANDIRI = [
-    "Judul Penelitian",
-    "Identitas Pengusul",
-    "Rekam Jejak Ketua Pengusul",
-    "Bidang Kepakaran",
-    "Sustainable Development Goals (SDGs)",
-    "Ringkasan",
-    "Kata kunci",
-    "PENDAHULUAN",
-    "METODE",
-    "HASIL YANG DIHARAPKAN",
-    "JADWAL PENELITIAN",
-    "DAFTAR PUSTAKA",
-]
+# ── Section Templates ──────────────────────────────────────────────────────────
+_BASE_HEADER = ["Judul Penelitian", "Identitas Pengusul"]
+_REKAM_JEJAK = ["Rekam Jejak Ketua Pengusul"]
+_SDG_RINGKASAN = ["Sustainable Development Goals (SDGs)", "Ringkasan", "Kata kunci"]
 
-SECTION_PROPOSAL_UMUM = [
-    "Judul Penelitian",
-    "Identitas Pengusul",
-    "Jumlah Dana Usulan",
-    "Rekam Jejak Ketua Pengusul",
-    "Bidang Kepakaran",
-    "Sustainable Development Goals (SDGs)",
-    "Ringkasan",
-    "Kata kunci",
-    "PENDAHULUAN",
-    "METODE",
-    "HASIL YANG DIHARAPKAN",
-    "JADWAL PENELITIAN",
-    "BIAYA PENELITIAN",
-    "DAFTAR PUSTAKA",
-]
+_PROPOSAL_END = ["PENDAHULUAN", "METODE", "HASIL YANG DIHARAPKAN", "JADWAL PENELITIAN", "DAFTAR PUSTAKA"]
+_LAPORAN_END = ["HASIL PELAKSANAAN PENELITIAN", "STATUS LUARAN", "KENDALA PELAKSANAAN PENELITIAN", "RENCANA TAHAPAN SELANJUTNYA", "DAFTAR PUSTAKA"]
 
-SECTION_PROPOSAL_PENUGASAN = [
-    "Judul Penelitian",
-    "Identitas Pengusul",
-    "Jumlah Dana Usulan",
-    "Rekam Jejak Ketua Pengusul",
-    "Bidang Penugasan",
-    "Sustainable Development Goals (SDGs)",
-    "Ringkasan",
-    "Kata kunci",
-    "PENDAHULUAN",
-    "METODE",
-    "HASIL YANG DIHARAPKAN",
-    "JADWAL PENELITIAN",
-    "BIAYA PENELITIAN",
-    "DAFTAR PUSTAKA",
-]
-
-SECTION_PROPOSAL_PRIORITAS = [
-    "Judul Penelitian",
-    "Identitas Pengusul",
-    "Jumlah Dana Usulan",
-    "Rekam Jejak Ketua Pengusul",
-    "Bidang Prioritas",
-    "Sustainable Development Goals (SDGs)",
-    "Ringkasan",
-    "Kata kunci",
-    "PENDAHULUAN",
-    "METODE",
-    "HASIL YANG DIHARAPKAN",
-    "JADWAL PENELITIAN",
-    "BIAYA PENELITIAN",
-    "DAFTAR PUSTAKA",
-]
-
-SECTION_LAPORAN_KEMAJUAN = [
-    "Judul Penelitian",
-    "Identitas Pengusul",
-    "Bidang Penugasan",
-    "Sustainable Development Goals (SDGs)",
-    "Ringkasan",
-    "Kata kunci",
-    "HASIL PELAKSANAAN PENELITIAN",
-    "STATUS LUARAN",
-    "KENDALA PELAKSANAAN PENELITIAN",
-    "RENCANA TAHAPAN SELANJUTNYA",
-    "DAFTAR PUSTAKA",
-]
-
-SECTION_LAPORAN_AKHIR = [
-    "Judul Penelitian",
-    "Identitas Pengusul",
-    "Bidang Penugasan",
-    "Sustainable Development Goals (SDGs)",
-    "Ringkasan",
-    "Kata kunci",
-    "HASIL PELAKSANAAN PENELITIAN",
-    "STATUS LUARAN",
-    "KENDALA PELAKSANAAN PENELITIAN",
-    "RENCANA TAHAPAN SELANJUTNYA",
-    "DAFTAR PUSTAKA",
-]
-
-# Map doc_type string to its section list
+# ── Document Type Definitions ──────────────────────────────────────────────────
 DOCUMENT_TYPES = {
-    "proposal_mandiri": SECTION_PROPOSAL_MANDIRI,
-    "proposal_umum": SECTION_PROPOSAL_UMUM,
-    "proposal_penugasan": SECTION_PROPOSAL_PENUGASAN,
-    "proposal_prioritas": SECTION_PROPOSAL_PRIORITAS,
-    "laporan_kemajuan": SECTION_LAPORAN_KEMAJUAN,
-    "laporan_akhir": SECTION_LAPORAN_AKHIR,
+    "proposal_mandiri": _BASE_HEADER + _REKAM_JEJAK + ["Bidang Kepakaran"] + _SDG_RINGKASAN + _PROPOSAL_END,
+    "proposal_umum": _BASE_HEADER + ["Jumlah Dana Usulan"] + _REKAM_JEJAK + ["Bidang Kepakaran"] + _SDG_RINGKASAN + ["BIAYA PENELITIAN"] + _PROPOSAL_END,
+    "proposal_penugasan": _BASE_HEADER + ["Jumlah Dana Usulan"] + _REKAM_JEJAK + ["Bidang Penugasan"] + _SDG_RINGKASAN + ["BIAYA PENELITIAN"] + _PROPOSAL_END,
+    "proposal_prioritas": _BASE_HEADER + ["Jumlah Dana Usulan"] + _REKAM_JEJAK + ["Bidang Prioritas"] + _SDG_RINGKASAN + ["BIAYA PENELITIAN"] + _PROPOSAL_END,
+    "laporan_kemajuan": _BASE_HEADER + ["Bidang Penugasan"] + _SDG_RINGKASAN + _LAPORAN_END,
+    "laporan_akhir": _BASE_HEADER + ["Bidang Penugasan"] + _SDG_RINGKASAN + _LAPORAN_END,
 }
 
+# ── Subtitle Templates (for stripping instructional text) ──────────────────────
 SUBTITLE_MAP = {
     "Bidang Kepakaran": "Tuliskan poin Bidang Kepakaran yang terkait dengan penelitian ini. Berikut ini adalah pilihan Bidang Kepakaran",
+    "Sustainable Development Goals (SDGs)": "Tuliskan poin Sustainable Development Goals yang terkait dengan penelitian ini. Berikut ini adalah pilihan Sustainable Development Goals",
     "Ringkasan": "Ringkasan penelitian (maksimum 300 kata) berisi Urgensi, tujuan, metode, dan luaran yang ditargetkan Ringkasan dan kata kunci tidak lebih dari halaman pertama.",
     "Kata kunci": "Isian 5 kata kunci yang dipisahkan dengan tanda titik koma (;)",
     "PENDAHULUAN": "Pendahuluan penelitian tidak lebih dari 1000 kata yang memuat, latar belakang, rumusan permasalahan yang akan diteliti, pendekatan pemecahan masalah, state-of-the-art dan kebaruan, peta jalan (road map) penelitian setidaknya 5 tahun. Sitasi disusun dan ditulis berdasarkan sistem nomor sesuai dengan urutan pengutipan.",
@@ -120,13 +37,9 @@ SUBTITLE_MAP = {
     "DAFTAR PUSTAKA": "Gunakan format referensi IEEE. Sitasi disusun dan ditulis berdasarkan sistem nomor sesuai dengan urutan pengutipan. Hanya pustaka yang disitasi pada usulan penelitian yang dicantumkan dalam Daftar Pustaka.",
 }
 
-# Minimum similarity ratio (0-1) for a line to match a section title
+# ── Detection Thresholds ───────────────────────────────────────────────────────
 MATCH_THRESHOLD = 0.75
-
-# How much bigger than body font a heading must be (in points)
 FONT_SIZE_DELTA = 0.5
-
-# Font name substrings that indicate bold text
 BOLD_KEYWORDS = ("bold", "Bold", "BOLD")
 
 
@@ -135,23 +48,18 @@ class PDFExtractor:
     Extract text from a PDF by detecting section headings.
 
     Usage:
+        # Auto-detect document type
+        extractor = PDFExtractor("proposal.pdf")
+        sections = extractor.extract()
+
+        # Or specify manually
         extractor = PDFExtractor("proposal.pdf", doc_type="proposal_mandiri")
         sections = extractor.extract()
-        # sections = {"Judul Penelitian": "...", "PENDAHULUAN": "...", ...}
     """
 
-    def __init__(self, pdf_path, doc_type):
-        """
-        Args:
-            pdf_path: Path to the PDF file.
-            doc_type: Document type key. Must be one of:
-                      'proposal_mandiri', 'proposal_umum',
-                      'laporan_kemajuan', 'laporan_akhir'.
-        """
-        if doc_type not in DOCUMENT_TYPES:
-            valid_types = list(DOCUMENT_TYPES.keys())
-            raise ValueError(f"Unknown doc_type: '{doc_type}'. Must be one of {valid_types}")
-
+    def __init__(self, pdf_path, doc_type=None):
+        if doc_type is not None and doc_type not in DOCUMENT_TYPES:
+            raise ValueError(f"Unknown doc_type: '{doc_type}'. Must be one of {list(DOCUMENT_TYPES)}")
         self.pdf_path = Path(pdf_path)
         self.doc_type = doc_type
         self.lines = []
@@ -159,234 +67,172 @@ class PDFExtractor:
         self.sections = {}
 
     def extract(self):
-        """
-        Main entry point. Reads the PDF and returns a dict of
-        {section_title: section_text}.
-
-        Returns:
-            dict: Mapping of section heading to its full text content.
-        """
+        """Main entry point. Returns {section_title: section_text}."""
         if not self.pdf_path.exists():
             raise FileNotFoundError(f"PDF not found: {self.pdf_path}")
 
-        # Step 1: Read all text lines from PDF
         with pdfplumber.open(self.pdf_path) as pdf:
-            self.lines = self.extractLines(pdf)
+            self.lines = self._extract_lines(pdf)
 
-        # Step 2: Find where each section heading appears
-        section_list = DOCUMENT_TYPES[self.doc_type]
-        body_font_size = self.detectBodyFontSize()
-        self.boundaries = self.findSectionBoundaries(body_font_size, section_list)
+        # Auto-detect doc_type if not specified
+        if self.doc_type is None:
+            self.doc_type = self._detect_doc_type()
 
-        # Step 3: Split text into sections based on headings
-        self.sections = self.splitIntoSection()
+        body_font = self._detect_body_font()
+        self.boundaries = self._find_boundaries(body_font)
+        self.sections = self._split_sections()
         return self.sections
 
-    def extractLines(self, pdf):
-        """
-        Extract every text line from the PDF, grouping characters
-        that sit on the same vertical position into one line.
+    # ── Private helpers ────────────────────────────────────────────────────────
 
-        Returns:
-            list[dict]: Each dict has keys: page, text, font_size, is_bold, y_position.
-        """
+    def _extract_lines(self, pdf):
+        """Extract every text line from the PDF, grouped by vertical position."""
         lines = []
-
-        for page_number, page in enumerate(pdf.pages, start=1):
-            characters = page.chars
-            if not characters:
+        for page_num, page in enumerate(pdf.pages, 1):
+            if not page.chars:
                 continue
 
-            # Group characters by their vertical position (y coordinate)
-            # Characters on the same line share roughly the same y value
-            y_position_to_characters = {}
-            for char in characters:
-                # Round y to nearest 2 pixels to group nearby characters
-                y_key = round(char["top"] / 2) * 2
-                if y_key not in y_position_to_characters:
-                    y_position_to_characters[y_key] = []
-                y_position_to_characters[y_key].append(char)
+            y_groups = {}
+            for ch in page.chars:
+                y_key = round(ch["top"] / 2) * 2
+                y_groups.setdefault(y_key, []).append(ch)
 
-            # Process each group of characters (each visual line)
-            for y_position in sorted(y_position_to_characters):
-                characters_in_line = y_position_to_characters[y_position]
-
-                # Sort characters left to right by their x position
-                characters_in_line.sort(key=lambda char: char["x0"])
-
-                # Join all characters into a single text string
-                line_text = "".join(char["text"] for char in characters_in_line).strip()
-                if not line_text:
+            for y_pos in sorted(y_groups):
+                chars = sorted(y_groups[y_pos], key=lambda c: c["x0"])
+                text = "".join(c["text"] for c in chars).strip()
+                if not text:
                     continue
 
-                # Get the largest font size in this line
-                largest_font_size = max(char["size"] for char in characters_in_line)
-
-                # Check if any character in the line is bold
-                line_is_bold = any(self.isBoldChar(char.get("fontname", "")) for char in characters_in_line)
-
-                lines.append(
-                    {
-                        "page": page_number,
-                        "text": line_text,
-                        "font_size": largest_font_size,
-                        "is_bold": line_is_bold,
-                        "y_position": y_position,
-                    }
-                )
-
+                lines.append({
+                    "page": page_num,
+                    "text": text,
+                    "font_size": max(c["size"] for c in chars),
+                    "is_bold": any(self._is_bold(c.get("fontname", "")) for c in chars),
+                    "y_position": y_pos,
+                })
         return lines
 
-    def detectBodyFontSize(self):
-        """
-        Find the most common font size in the document,
-        which is assumed to be the body text size.
+    def _detect_doc_type(self):
+        """Auto-detect document type by counting matching section headings."""
+        all_text = " ".join(line["text"].lower() for line in self.lines)
+        scores = {}
 
-        Returns:
-            float: The most frequently used font size.
-        """
-        all_font_sizes = [round(line["font_size"], 1) for line in self.lines]
-        most_common_size = Counter(all_font_sizes).most_common(1)[0][0]
-        return most_common_size
+        for doc_type, sections in DOCUMENT_TYPES.items():
+            # Count how many sections appear in the PDF
+            matches = sum(1 for s in sections if s.lower() in all_text)
+            # Normalize by total sections to get ratio
+            scores[doc_type] = matches / len(sections)
 
-    def findSectionBoundaries(self, body_font_size, section_list):
-        """
-        Scan all lines and find which ones match a section heading.
+        best_type = max(scores, key=scores.get)
+        best_score = scores[best_type]
 
-        A line is considered a heading if:
-        - It closely matches a known section title, AND
-        - It is either bold OR has a larger font size than body text.
-
-        Returns:
-            list[dict]: Each dict has keys: title, found_text, score, page, line_index.
-        """
-        boundaries = []
-        already_matched_titles = set()
-
-        for line_index, line in enumerate(self.lines):
-            line_text = line["text"]
-            line_font_size = line["font_size"]
-            line_is_bold = line["is_bold"]
-
-            # Check if font size is larger than body text
-            is_larger_font = line_font_size >= body_font_size + FONT_SIZE_DELTA
-
-            # Use stricter threshold for lines that are NOT bold or larger
-            if is_larger_font or line_is_bold:
-                similarity_threshold = MATCH_THRESHOLD
-            else:
-                similarity_threshold = MATCH_THRESHOLD + 0.15
-
-            # Find the best matching section title for this line
-            matched_title, similarity_score = self.findBestMatch(line_text, section_list)
-
-            # Skip if no good match found
-            if matched_title is None or similarity_score < similarity_threshold:
-                continue
-
-            # Skip if this title was already matched earlier
-            if matched_title in already_matched_titles:
-                continue
-
-            already_matched_titles.add(matched_title)
-            boundaries.append(
-                {
-                    "title": matched_title,
-                    "found_text": line_text,
-                    "score": round(similarity_score, 3),
-                    "page": line["page"],
-                    "line_index": line_index,
-                }
+        # Require at least 40% of sections to match for a confident detection
+        if best_score < 0.4:
+            raise ValueError(
+                f"Cannot auto-detect document type. "
+                f"Best match: '{best_type}' with {best_score:.0%} confidence. "
+                f"Please specify doc_type manually."
             )
 
-        # Sort boundaries by their position in the document
-        boundaries.sort(key=lambda boundary: boundary["line_index"])
+        return best_type
+
+    def _detect_body_font(self):
+        """Find the most common font size (assumed to be body text)."""
+        sizes = [round(l["font_size"], 1) for l in self.lines]
+        return Counter(sizes).most_common(1)[0][0]
+
+    def _find_boundaries(self, body_font):
+        """Scan lines to find section heading boundaries."""
+        boundaries = []
+        seen = set()
+        section_list = DOCUMENT_TYPES[self.doc_type]
+
+        for idx, line in enumerate(self.lines):
+            is_heading_style = (
+                line["font_size"] >= body_font + FONT_SIZE_DELTA or line["is_bold"]
+            )
+            thresh = MATCH_THRESHOLD if is_heading_style else MATCH_THRESHOLD + 0.15
+
+            title, score = self._best_match(line["text"], section_list)
+            if title is None or score < thresh or title in seen:
+                continue
+
+            seen.add(title)
+            boundaries.append({
+                "title": title,
+                "found_text": line["text"],
+                "score": round(score, 3),
+                "page": line["page"],
+                "line_index": idx,
+            })
+
+        boundaries.sort(key=lambda b: b["line_index"])
         return boundaries
 
-    def splitIntoSection(self):
-        """
-        Split the full text into sections based on detected headings.
-
-        Returns:
-            dict: Mapping of section title to its text content.
-        """
+    def _split_sections(self):
+        """Split full text into sections based on detected headings."""
         sections = {}
-        total_lines = len(self.lines)
+        total = len(self.lines)
 
-        for boundary_index, boundary in enumerate(self.boundaries):
-            # Section starts at this heading
-            start_index = boundary["line_index"]
+        for i, b in enumerate(self.boundaries):
+            start = b["line_index"]
+            end = self.boundaries[i + 1]["line_index"] if i + 1 < len(self.boundaries) else total
 
-            # Section ends at the next heading (or end of document)
-            if boundary_index + 1 < len(self.boundaries):
-                end_index = self.boundaries[boundary_index + 1]["line_index"]
-            else:
-                end_index = total_lines
+            parts, prev_page = [], None
+            for line in self.lines[start + 1 : end]:
+                if prev_page is not None and line["page"] != prev_page:
+                    parts.append("")
+                parts.append(line["text"])
+                prev_page = line["page"]
 
-            # Collect all text lines between start and end
-            # Skip start_index (that's the heading itself)
-            text_parts = []
-            previous_page = None
-
-            for line in self.lines[start_index + 1 : end_index]:
-                # Add blank line between pages
-                if previous_page is not None and line["page"] != previous_page:
-                    text_parts.append("")
-                text_parts.append(line["text"])
-                previous_page = line["page"]
-
-            section_text = "\n".join(text_parts).strip()
-            section_text = section_text.replace("\n", " ")
-            section_text = self.removeSubtitle(boundary["title"], section_text)
-            sections[boundary["title"]] = section_text
+            text = "\n".join(parts).strip().replace("\n", " ")
+            sections[b["title"]] = self._remove_subtitle(b["title"], text)
 
         return sections
 
-    def findBestMatch(self, line_text, section_list):
-        """
-        Compare a line of text against all known section titles
-        and return the best match.
-
-        Returns:
-            tuple: (matched_title, similarity_score) or (None, best_score)
-        """
-        best_title = None
-        best_score = 0.0
+    def _best_match(self, line_text, section_list):
+        """Return (title, score) of best matching section heading, or (None, score)."""
+        line_lower = line_text.lower().strip()
+        best_title, best_score = None, 0.0
 
         for title in section_list:
-            # Compare lowercase, stripped versions
-            similarity = SequenceMatcher(None, line_text.lower().strip(), title.lower().strip()).ratio()
+            score = SequenceMatcher(None, line_lower, title.lower().strip()).ratio()
+            if score > best_score:
+                best_title, best_score = title, score
 
-            if similarity > best_score:
-                best_title = title
-                best_score = similarity
-
-        if best_score >= MATCH_THRESHOLD:
-            return best_title, best_score
-        return None, best_score
+        return (best_title, best_score) if best_score >= MATCH_THRESHOLD else (None, best_score)
 
     @staticmethod
-    def isBoldChar(font_name):
-        """Check if a font name indicates bold text."""
-        if not font_name:
-            return False
-        return any(keyword in font_name for keyword in BOLD_KEYWORDS)
+    def _is_bold(font_name):
+        return bool(font_name) and any(k in font_name for k in BOLD_KEYWORDS)
 
-    @staticmethod
-    def removeSubtitle(title, text):
-        """
-        If a section has a known subtitle template, strip it from the
-        beginning of the extracted text.
-        """
+    def _remove_subtitle(self, title, text):
+        """Strip known subtitle/instructional text from section content."""
+        if title == "Kata kunci":
+            text = re.sub(
+                r"Substansi\s+Usulan\s+Petunjuk:\s+Pengusul\s+hanya\s+diperkenankan\s+"
+                r"mengisi\s+di\s+tempat\s+yang\s+telah\s+disediakan\s+\(diberi\s+warna\s+[\.\s…\-]+\)\s+"
+                r"sesuai\s+dengan\s+petunjuk\s+pengisian\s+dan\s+tidak\s+diperkenankan\s+untuk\s+"
+                r"memodifikasi\s+template\s+menghapus\s+setiap\s+bagian",
+                "", text, flags=re.IGNORECASE,
+            ).strip()
+
         subtitle = SUBTITLE_MAP.get(title)
         if not subtitle:
             return text
 
-        # Normalize spaces for comparison
-        clean_subtitle = " ".join(subtitle.split())
-        clean_text = " ".join(text.split())
+        pattern = re.escape(subtitle)
+        for old, new in [(r"\ ", r"\s+"), (r"\-", r"\s*-\s*"), (r"\(", r"\(\s*"),
+                          (r"\)", r"\s*\)"), (r"\/", r"\s*/\s*")]:
+            pattern = pattern.replace(old, new)
 
-        if clean_text.startswith(clean_subtitle):
-            text = text[len(subtitle) :].strip()
+        match = re.match(pattern, text, flags=re.IGNORECASE)
+        if match:
+            return text[match.end():].strip()
+
+        clean_sub = " ".join(subtitle.split())
+        clean_txt = " ".join(text.split())
+        if clean_txt.lower().startswith(clean_sub.lower()):
+            return text[len(subtitle):].strip()
 
         return text

@@ -29,9 +29,9 @@ dim_skema_schema = Schema(
 dim_sdgs_schema = Schema(
     NestedField(field_id=1, name="sdgs_id", field_type=IntegerType(), required=False),
     NestedField(field_id=2, name="kode_sdgs", field_type=StringType(), required=False),
-    NestedField(field_id=3, name="deskripsi", field_type=StringType(), required=False),
-    NestedField(field_id=4, name="is_utama", field_type=StringType(), required=False),
-    NestedField(field_id=5, name="is_unggulan", field_type=StringType(), required=False),
+    # NestedField(field_id=3, name="deskripsi", field_type=StringType(), required=False),
+    # NestedField(field_id=4, name="is_utama", field_type=StringType(), required=False),
+    # NestedField(field_id=5, name="is_unggulan", field_type=StringType(), required=False),
 )
 
 dim_jurnal_schema = Schema(

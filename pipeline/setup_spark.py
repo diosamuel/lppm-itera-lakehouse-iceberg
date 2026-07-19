@@ -23,7 +23,7 @@ class SetupSpark:
         os.environ["PYTHONPATH"] = f"{pipeline_dir}:{existing}".rstrip(":")
 
         self.spark = (
-            SparkSession.builder.appName(self.app_name)
+            SparkSession.builder.master("spark://spark-iceberg:7077").appName(self.app_name)
             # Iceberg Spark
             .config(
                 "spark.sql.extensions",

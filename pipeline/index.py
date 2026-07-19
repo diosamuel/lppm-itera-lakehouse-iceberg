@@ -1,13 +1,24 @@
 import os
+from pathlib import Path
 
 from pyspark.sql import functions as F
-from pyspark.sql.types import StringType, StructField, StructType
 from pyspark.sql.window import Window
 
 from extract_transform import Transform
 from setup_catalog import SetupIcebergCatalog
 from setup_minio import SetupMinioS3
 from setup_spark import SetupSpark
+
+
+BASE_DIR = Path(__file__).resolve().parent
+
+
+def run_sql_file(spark, sql_file):
+    sql_text = Path(sql_file).read_text(encoding="utf-8")
+    statements = [statement.strip() for statement in sql_text.split(";") if statement.strip()]
+    for statement in statements:
+        spark.sql(statement)
+
 
 # Initialize storage
 StorageS3 = SetupMinioS3(
@@ -169,66 +180,11 @@ res.writeTo("silver.sitasi").createOrReplace()
 print("Written silver.sitasi")
 
 # Skema Mapping
-skema_values = [
-    ("Skema Penugasan",),
-    ("GBU 45",),
-    ("Skema Penelitian Prioritas",),
-    ("Skema Penelitian Penugasan",),
-    ("Skema Penelitian Berbasis Kepakaran",),
-    ("Skema Pendanaan Bersama",),
-    ("Skema Keilmuan",),
-    ("Program teknologi tepat guna TTG maks Rp 20 000 000",),
-    ("Program pengembangan produk unggulan daerah PPUD maks Rp 15 000 000",),
-    ("Program pemberdayaan dan pembelajaran masyarakat PPM maks Rp 7 500 000",),
-    ("Program Penugasan Pengabdian Kerjasama",),
-    ("Program Penguatan Kelompok Keilmuan PKK",),
-    ("Program Pengabdian Penugasan PPP",),
-    ("Program Penelitian Penugasan",),
-    ("Program Penelitian Dosen Pemula",),
-    ("Program Penelitian Dasar",),
-    ("Program Layanan Kepakaran dan Pembelajaran Masyarakat LKPM",),
-    ("Program Layanan Kepakaran dan Pembelajaran Masyarakat",),
-    ("Program Kemitraan Masyarakat PKM maks Rp 10 000 000",),
-    ("Program Desa Binaan Kuliah Kerja Nyata",),
-    ("Program Desa Binaan",),
-    ("Penugasan Kerjasama PKM",),
-    ("PKM Reguler",),
-    ("PDP Pemula",),
-    ("Madya",),
-    ("Kolaborasi",),
-]
+SparkSession.sql("DROP TABLE IF EXISTS silver.dim_skema")
+run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_skema.sql")
+print("Written silver.dim_skema")
 
-skema_schema = StructType([StructField("skema", StringType(), False)])
-skema_df = SparkSession.createDataFrame(skema_values, schema=skema_schema)
-skema_df.writeTo("silver.lookup_skema").createOrReplace()
-print("Written silver.lookup_skema")
-
-#  SDGs Mapping 
-sdgs_values = [
-    ("SDG 4 Quality education",),
-    ("SDG 11 Sustainable cities and communities",),
-    ("SDG 3 Good health and well being",),
-    ("SDG 13 Climate action",),
-    ("SDG 16 Peace justice and strong institutions",),
-    ("SDG 9 Industry innovation and infrastructure",),
-    ("SDG 6 Clean water and sanitation",),
-    ("SDG 12 Responsible consumption and production",),
-    ("SDG 17 Partnerships for the goals",),
-    ("SDG 7 Affordable and clean energy",),
-    ("SDG 2 Zero Hunger",),
-    ("SDG 8 Decent work and economic growth",),
-    ("SDG 15 Life on land",),
-    ("SDG 14 Life below water",),
-    ("SDG 10 Reduced inequalities",),
-    ("SDG 1 No Poverty",),
-    ("ITERA for Sumatera",),
-    ("Hilirisasi Produk",),
-    ("Revolusi Industri 4 0",),
-    ("Kepeloporan",),
-    ("Dasar Fundamental",),
-]
-
-sdgs_schema = StructType([StructField("sdgs", StringType(), False)])
-sdgs_df = SparkSession.createDataFrame(sdgs_values, schema=sdgs_schema)
-sdgs_df.writeTo("silver.lookup_sdgs").createOrReplace()
-print("Written silver.lookup_sdgs")
+# SDGs Mapping
+SparkSession.sql("DROP TABLE IF EXISTS silver.dim_sdgs")
+run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_sdgs.sql")
+print("Written silver.dim_sdgs")

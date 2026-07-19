@@ -176,17 +176,13 @@ sources:
             description: Manual description goes here.
 
       - name: dim_sdgs
-        description: "{{ doc('gold_dim_sdgs') }}"
+        description: SDGs dimension.
         columns:
           - name: sdgs_id
             description: Manual description goes here.
           - name: kode_sdgs
             description: Manual description goes here.
           - name: deskripsi
-            description: Manual description goes here.
-          - name: is_utama
-            description: Manual description goes here.
-          - name: is_unggulan
             description: Manual description goes here.
 
       - name: dim_jurnal
