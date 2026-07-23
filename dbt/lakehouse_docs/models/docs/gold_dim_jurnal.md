@@ -1,28 +1,31 @@
 {% docs gold_dim_jurnal %}
 
-## Gold Layer: Grant Scheme Dimension Table
+## Gold Layer: Jurnal Dimension Table
 
-This model creates a standardized dimension for grant schemes.
+Dimensi jurnal yang distandarisasi dari silver.sitasi. Mengelompokkan jurnal berdasarkan nama dan kategori.
 
 ### Data Flow
 ```
-silver_deduped → gold_dim_jurnal (table)
+silver.sitasi → gold.dim_jurnal
 ```
 
-### Dependencies
-- ``silver_deduped``
-
 ### Transformations
-1. Extract unique grant schemes
-2. Generate surrogate key using MD5 hash of scheme name
-3. Determine maximum funding based on scheme type
+1. Extract unique jurnal + jurnal_kategori dari silver.sitasi
+2. Generate surrogate key menggunakan `ROW_NUMBER() OVER (ORDER BY nama_jurnal)`
+3. Map `jurnal` → `nama_jurnal`, `jurnal` → `rank_jurnal` (untuk future ranking), `jurnal_kategori` → `kategori_jurnal`
 
-### Funding Rules
-- **Unggulan**: max 50,000,000
-- **Utama**: max 100,000,000
-- **Default**: 25,000,000
+### Grain
+- 1 row = 1 jurnal unik (berdasarkan nama + kategori)
 
-### Surrogate Key
-- `skema_id`: `MD5(SCHEME)` - unique identifier for each grant scheme
+### Columns
+| Column | Type | Description |
+|--------|------|-------------|
+| `jurnal_id` | INT | Surrogate key (PK) |
+| `nama_jurnal` | VARCHAR | Nama jurnal (sudah distandarisasi) |
+| `rank_jurnal` | VARCHAR | Peringkat jurnal (saat ini sama dengan nama_jurnal) |
+| `kategori_jurnal` | VARCHAR | Kategori jurnal (INTERNASIONAL, NASIONAL, LAINNYA) |
+
+### Business Purpose
+Memungkinkan analisis publikasi berdasarkan jurnal dan kategorinya (internasional/nasional) di Superset.
 
 {% enddocs %}

@@ -1,28 +1,33 @@
 {% docs gold_dim_dosen %}
 
-## Gold Layer: Lecturer Dimension Table
+## Gold Layer: Dosen Dimension Table
 
-This model creates a standardized dimension for lecturers used in reporting.
+Dimensi dosen yang distandarisasi dari silver.penelitian, silver.pengabdian, dan silver.buku_keilmuan.
 
 ### Data Flow
 ```
-silver_deduped → gold_dim_dosen (table)
+silver.penelitian ∪ silver.pengabdian ∪ silver.buku_keilmuan → gold.dim_dosen
 ```
 
-### Dependencies
-- ``silver_deduped``
-
 ### Transformations
-1. Extract unique lecturers from research grants
-2. Generate surrogate key using MD5 hash of NIP
-3. Standardize names and departments to uppercase
-4. Add timestamp for updates
+1. Union semua dosen (ketua + anggota) dari 3 silver tables
+2. Generate surrogate key menggunakan `ROW_NUMBER() OVER (ORDER BY nama)`
+3. Ambil prodi dan fakultas pertama yang ditemukan untuk setiap dosen (`FIRST()`)
+4. Deduplikasi berdasarkan nama + NIP
 
-### Surrogate Key
-- `dosen_id`: `MD5(NIP)` - unique identifier for each lecturer
+### Grain
+- 1 row = 1 dosen unik
+
+### Columns
+| Column | Type | Description |
+|--------|------|-------------|
+| `dosen_id` | INT | Surrogate key (PK) |
+| `nip` | VARCHAR | NIP dosen |
+| `nama` | VARCHAR | Nama dosen (sudah distandarisasi) |
+| `prodi` | VARCHAR | Program studi dosen |
+| `fakultas` | VARCHAR | Fakultas dosen |
 
 ### Business Purpose
-This dimension enables analysis of lecturer performance, participation,
-and contributions across research grants.
+Memungkinkan analisis kontribusi dosen lintas hibah dan sitasi, serta filter/group by prodi atau fakultas di Superset.
 
 {% enddocs %}

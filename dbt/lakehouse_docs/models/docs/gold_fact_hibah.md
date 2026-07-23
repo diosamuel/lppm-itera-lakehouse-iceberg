@@ -1,28 +1,42 @@
 {% docs gold_fact_hibah %}
 
-## Gold Layer: Grant Fact Table
+## Gold Layer: Hibah Fact Table
 
-This model creates facts for grant analysis and reporting.
+Tabel fakta untuk analisis hibah (penelitian, pengabdian, buku keilmuan). Grain: 1 row = 1 hibah proposal.
 
 ### Data Flow
 ```
-silver_deduped → gold_fact_hibah (table)
+silver.penelitian ∪ silver.pengabdian ∪ silver.buku_keilmuan
+  → JOIN dim_dosen (ketua) → ketua_id
+  → JOIN dim_skema → skema_id
+  → JOIN dim_sdgs → sdgs_id
+  → gold.fact_hibah
 ```
 
-### Dependencies
-- ``silver_deduped``
+### Grain
+- 1 row = 1 hibah proposal (dari sudut pandang ketua peneliti)
 
-### Transformations
-1. Generate surrogate key combining grant ID and year
-2. Create references to dimension tables (hibah, ketua)
-3. Include budget amounts and grant status
-
-### Surrogate Keys
-- `hibah_fact_id`: `MD5(ID || TAHUN)` - unique fact record identifier
-- `hibah_id`: Reference to `gold_dim_hibah`
-- `ketua_id`: Reference to `gold_dim_dosen`
+### Columns
+| Column | Type | Description |
+|--------|------|-------------|
+| `hibah_fact_id` | INT | Surrogate key (PK) |
+| `ketua_id` | INT | FK ke dim_dosen.dosen_id |
+| `hibah_proposal_id` | VARCHAR | FK ke dim_hibah_proposal.hibah_proposal_id |
+| `skema_id` | INT | FK ke dim_skema.skema_id |
+| `sdgs_id` | INT | FK ke dim_sdgs.sdgs_id |
+| `jenis_hibah` | VARCHAR | Jenis hibah (penelitian, pengabdian, buku_keilmuan) |
+| `tahun` | INT | Tahun pelaksanaan |
+| `status_hibah` | VARCHAR | Status hibah (diterima, ditolak, diusulkan) |
+| `total_anggota_mahasiswa` | INT | Jumlah anggota mahasiswa dalam tim |
+| `total_anggota_dosen` | INT | Jumlah anggota dosen dalam tim |
+| `usulan_biaya` | BIGINT | Total biaya yang diusulkan (Rupiah) |
 
 ### Fact Measures
-- `usulan_biaya`: Budget proposal amount
+- `total_anggota_mahasiswa`: COUNT array size dari nim_anggota_mahasiswa
+- `total_anggota_dosen`: COUNT array size dari nip_anggota_dosen
+- `usulan_biaya`: SUM biaya yang diusulkan
+
+### Business Purpose
+Analisis distribusi hibah per tahun, per skema, per fakultas, dan tracking budget.
 
 {% enddocs %}

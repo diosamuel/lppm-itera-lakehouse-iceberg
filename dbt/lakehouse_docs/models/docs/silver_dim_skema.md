@@ -1,8 +1,9 @@
-{% docs lookup_skema_docs %}
+{% docs silver_dim_skema %}
 
-# Lookup Skema Documentation
+# Silver Dim Skema
 
-This project contains lookup tables `lookup_sdgs` for SDGs categorization
+This project contains dimension table `dim_skema` for skema categorization
+in the silver layer.
 
 | No | Skema |
 |---|---|
@@ -33,7 +34,7 @@ This project contains lookup tables `lookup_sdgs` for SDGs categorization
 | 25 | Madya |
 | 26 | Kolaborasi |
 
-Lookups are used in the gold layer dimension models to ensure consistent
+This dimension is used in the gold layer dimension models to ensure consistent
 data classification and categorization.
 
 {% enddocs %}

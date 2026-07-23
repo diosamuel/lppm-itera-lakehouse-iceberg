@@ -357,8 +357,10 @@ def standarizingNamaDosen(text):
         return None
     text = str(text).strip()
     text = re.sub(r"^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$", "", text).strip()
-    if text and not text.endswith("."):
-        text = text + "."
+    if text:
+        text = " ".join(w.capitalize() for w in text.split())
+        if not text.endswith("."):
+            text = text + "."
     return text or None
 
 

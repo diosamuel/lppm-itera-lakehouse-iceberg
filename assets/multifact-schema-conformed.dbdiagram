@@ -1,0 +1,77 @@
+Table dim_dosen {
+  dosen_id INT [pk]
+  nip VARCHAR
+  nama VARCHAR
+}
+
+Table dim_skema {
+  skema_id INT [pk]
+  nama_skema VARCHAR
+  pendanaan_maks INT
+}
+
+Table dim_sdgs {
+  sdgs_id INT [pk]
+  kode_sdgs VARCHAR
+}
+
+Table dim_jurnal {
+  jurnal_id INT [pk]
+  nama_jurnal VARCHAR
+  rank_jurnal VARCHAR
+  kategori_jurnal VARCHAR
+}
+
+Table dim_hibah_proposal {
+  hibah_proposal_id VARCHAR [pk]
+  judul_proposal VARCHAR
+  status_proposal VARCHAR
+  jenis_hibah VARCHAR
+}
+
+// fact_hibah = 1 row 1 hibah proposal (ketua grain)
+Table fact_hibah {
+  hibah_fact_id INT [pk]
+  ketua_id INT
+  hibah_proposal_id VARCHAR
+  skema_id INT
+  sdgs_id INT
+  jenis_hibah VARCHAR
+  tahun INT
+  status_hibah VARCHAR
+  total_anggota_mahasiswa INT
+  total_anggota_dosen INT
+  usulan_biaya BIGINT
+}
+
+// fact_dosen_hibah = 1 row per dosen per hibah (role: ketua/anggota)
+Table fact_dosen_hibah {
+  dosen_hibah_id INT [pk]
+  dosen_id INT
+  hibah_proposal_id VARCHAR
+  tahun INT
+  role VARCHAR
+  jenis_hibah VARCHAR
+  status_hibah VARCHAR
+  prodi VARCHAR [note: 'prodi saat proposal']
+  fakultas VARCHAR [note: 'fakultas saat proposal']
+}
+
+// fact_sitasi = 1 row per dosen per jurnal
+Table fact_sitasi {
+  sitasi_id INT [pk]
+  dosen_id INT
+  jurnal_id INT
+  total_publikasi INT
+  total_internasional INT
+  total_nasional INT
+}
+
+Ref: fact_hibah.ketua_id > dim_dosen.dosen_id
+Ref: fact_hibah.hibah_proposal_id > dim_hibah_proposal.hibah_proposal_id
+Ref: fact_hibah.skema_id > dim_skema.skema_id
+Ref: fact_hibah.sdgs_id > dim_sdgs.sdgs_id
+Ref: fact_dosen_hibah.dosen_id > dim_dosen.dosen_id
+Ref: fact_dosen_hibah.hibah_proposal_id > dim_hibah_proposal.hibah_proposal_id
+Ref: fact_sitasi.dosen_id > dim_dosen.dosen_id
+Ref: fact_sitasi.jurnal_id > dim_jurnal.jurnal_id

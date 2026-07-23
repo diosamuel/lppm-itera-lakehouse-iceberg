@@ -93,3 +93,18 @@ docker compose down -v
 3. bikin dashboard
 
 Total pendanaan : 128.909.280.121 (~129M)
+
+
+
+yang sudah ada dimension and fact
+
+1. dim sdgs (done, manual)
+2. dim skema (done, manual)
+3. dim dosen (done)
+4. fact dosen hibah (done)
+5. dim jurnal (done)
+6. fact sitasi
+7. fact hibah
+8. dim_hibah_proposal
+9. dim_hibah_progress
+10. dim_hibah_final

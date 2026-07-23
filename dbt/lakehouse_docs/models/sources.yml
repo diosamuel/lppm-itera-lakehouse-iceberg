@@ -44,6 +44,7 @@ sources:
       - name: sitasi
         columns: *raw_hibah_columns
         description: "{{ doc('bronze_sitasi') }}"
+
   - name: silver
     database: default
     schema: silver
@@ -53,43 +54,43 @@ sources:
         description: "{{ doc('silver_penelitian') }}"
         columns: &hibah_columns
           - name: id
-            description: Manual description goes here.
+            description: Surrogate identifier (e.g. PENELITIAN-1)
           - name: judul_proposal
-            description: Manual description goes here.
+            description: Judul proposal penelitian
           - name: ketua_peneliti
-            description: Manual description goes here.
+            description: Nama ketua peneliti (sudah distandarisasi)
           - name: jenis
-            description: Manual description goes here.
+            description: Jenis hibah (penelitian, pengabdian, buku_keilmuan)
           - name: status
-            description: Manual description goes here.
+            description: Status hibah (diterima, ditolak, diusulkan)
           - name: skema
-            description: Manual description goes here.
+            description: Nama skema hibah
           - name: scope
-            description: Manual description goes here.
+            description: Scope penelitian
           - name: sdgs
-            description: Manual description goes here.
+            description: Kategori SDGs
           - name: usulan_biaya
-            description: Manual description goes here.
+            description: Biaya yang diusulkan (Rupiah)
           - name: status_proposal
-            description: Manual description goes here.
+            description: Status upload proposal (Sudah Upload, Belum Upload)
           - name: tahun
-            description: Manual description goes here.
+            description: Tahun pelaksanaan
           - name: prodi
-            description: Manual description goes here.
+            description: Program studi ketua peneliti
           - name: fakultas
-            description: Manual description goes here.
+            description: Fakultas ketua peneliti
           - name: nip_ketua_peneliti
-            description: Manual description goes here.
+            description: Array NIP ketua peneliti
           - name: nim_anggota_mahasiswa
-            description: Manual description goes here.
+            description: Array NIM anggota mahasiswa
           - name: nama_anggota_mahasiswa
-            description: Manual description goes here.
+            description: Array nama anggota mahasiswa
           - name: nip_anggota_dosen
-            description: Manual description goes here.
+            description: Array NIP anggota dosen
           - name: nama_anggota_dosen
-            description: Manual description goes here.
+            description: Array nama anggota dosen
           - name: advisor
-            description: Manual description goes here.
+            description: Nama advisor (jika ada)
 
       - name: pengabdian
         description: "{{ doc('silver_pengabdian') }}"
@@ -103,160 +104,165 @@ sources:
         description: "{{ doc('silver_sitasi') }}"
         columns:
           - name: id
-            description: Manual description goes here.
+            description: Surrogate identifier (e.g. SITASI-1)
           - name: prodi
-            description: Manual description goes here.
+            description: Program studi dosen
           - name: fakultas
-            description: Manual description goes here.
+            description: Fakultas dosen
           - name: ketua_peneliti
-            description: Manual description goes here.
+            description: Nama dosen pemilik publikasi (sudah distandarisasi)
           - name: judul_proposal
-            description: Manual description goes here.
+            description: Judul proposal terkait publikasi
           - name: sitasi
-            description: Manual description goes here.
+            description: Jumlah sitasi publikasi
           - name: triwulan
-            description: Manual description goes here.
+            description: Triwulan pelaporan sitasi (1-4)
           - name: publikasi
-            description: Manual description goes here.
+            description: Format publikasi lengkap (judul, volume, issue, halaman, tahun)
           - name: doi
-            description: Manual description goes here.
+            description: DOI publikasi (URL format)
           - name: tanggal_terbit_hari
-            description: Manual description goes here.
+            description: Hari terbit publikasi
           - name: tanggal_terbit_bulan
-            description: Manual description goes here.
+            description: Bulan terbit publikasi
           - name: tanggal_terbit_tahun
-            description: Manual description goes here.
+            description: Tahun terbit publikasi
           - name: tanggal_terbit_timestamp
-            description: Manual description goes here.
+            description: Timestamp terbit publikasi
           - name: jurnal
-            description: Manual description goes here.
+            description: Nama jurnal (sudah distandarisasi)
           - name: jurnal_kategori
-            description: Manual description goes here.
+            description: Kategori jurnal (INTERNASIONAL, NASIONAL, LAINNYA)
 
-      - name: lookup_skema
-        description: "{{ doc('lookup_skema_docs') }}"
+      - name: dim_skema
+        description: "{{ doc('silver_dim_skema') }}"
         columns:
           - name: skema
-            description: daftar skema terlampir
+            description: Daftar skema terlampir
 
-
-      - name: lookup_sdgs
-        description: "{{ doc('lookup_sdgs_docs') }}"
+      - name: dim_sdgs
+        description: "{{ doc('silver_dim_sdgs') }}"
         columns:
           - name: sdgs
-            description: daftar sdgs terlampir
+            description: Daftar sdgs terlampir
 
   - name: gold
     database: default
     schema: gold
-    description: Analytics tables used for reporting and dashboarding.
+    description: Analytics tables used for reporting and dashboarding (Superset).
     tables:
       - name: dim_dosen
         description: "{{ doc('gold_dim_dosen') }}"
         columns:
           - name: dosen_id
-            description: Manual description goes here.
+            description: Surrogate key (ROW_NUMBER)
           - name: nip
-            description: Manual description goes here.
+            description: NIP dosen
           - name: nama
-            description: Manual description goes here.
-          - name: prodi
-            description: Manual description goes here.
-          - name: fakultas
-            description: Manual description goes here.
+            description: Nama dosen (sudah distandarisasi)
 
       - name: dim_skema
         description: "{{ doc('gold_dim_skema') }}"
         columns:
           - name: skema_id
-            description: Manual description goes here.
+            description: Surrogate key (1-25)
           - name: nama_skema
-            description: Manual description goes here.
+            description: Nama skema hibah
           - name: pendanaan_maks
-            description: Manual description goes here.
+            description: Pendanaan maksimum (Rupiah), NULL jika tidak terdefinisi
 
       - name: dim_sdgs
-        description: SDGs dimension.
+        description: "{{ doc('gold_dim_sdgs') }}"
         columns:
           - name: sdgs_id
-            description: Manual description goes here.
+            description: Surrogate key (1-21)
           - name: kode_sdgs
-            description: Manual description goes here.
-          - name: deskripsi
-            description: Manual description goes here.
+            description: Kode/nama SDGs (e.g. 'SDG 1 No Poverty', 'Dasar Fundamental')
 
       - name: dim_jurnal
         description: "{{ doc('gold_dim_jurnal') }}"
         columns:
           - name: jurnal_id
-            description: Manual description goes here.
+            description: Surrogate key (ROW_NUMBER)
           - name: nama_jurnal
-            description: Manual description goes here.
+            description: Nama jurnal (sudah distandarisasi)
           - name: rank_jurnal
-            description: Manual description goes here.
+            description: Peringkat jurnal (same as nama_jurnal, untuk future ranking)
           - name: kategori_jurnal
-            description: Manual description goes here.
+            description: Kategori jurnal (INTERNASIONAL, NASIONAL, LAINNYA)
+
+      - name: dim_hibah_proposal
+        description: "{{ doc('gold_dim_hibah_proposal') }}"
+        columns:
+          - name: hibah_proposal_id
+            description: Surrogate identifier dari silver (e.g. PENELITIAN-1)
+          - name: judul_proposal
+            description: Judul proposal hibah
+          - name: status_proposal
+            description: Status upload proposal (Sudah Upload, Belum Upload)
+          - name: jenis_hibah
+            description: Jenis hibah (penelitian, pengabdian, buku_keilmuan)
 
       - name: fact_hibah
         description: "{{ doc('gold_fact_hibah') }}"
         columns:
           - name: hibah_fact_id
-            description: Manual description goes here.
-          - name: hibah_id
-            description: Manual description goes here.
-          - name: hibah_final_id
-            description: Manual description goes here.
-          - name: hibah_progress_id
-            description: Manual description goes here.
+            description: Surrogate key (ROW_NUMBER)
           - name: ketua_id
-            description: Manual description goes here.
+            description: FK ke dim_dosen.dosen_id (dosen ketua peneliti)
+          - name: hibah_proposal_id
+            description: FK ke dim_hibah_proposal.hibah_proposal_id
           - name: skema_id
-            description: Manual description goes here.
+            description: FK ke dim_skema.skema_id
           - name: sdgs_id
-            description: Manual description goes here.
+            description: FK ke dim_sdgs.sdgs_id
+          - name: jenis_hibah
+            description: Jenis hibah (penelitian, pengabdian, buku_keilmuan)
+          - name: tahun
+            description: Tahun pelaksanaan
+          - name: status_hibah
+            description: Status hibah (diterima, ditolak, diusulkan)
+          - name: total_anggota_mahasiswa
+            description: Jumlah anggota mahasiswa dalam tim
+          - name: total_anggota_dosen
+            description: Jumlah anggota dosen dalam tim
           - name: usulan_biaya
-            description: Manual description goes here.
+            description: Total biaya yang diusulkan (Rupiah)
 
       - name: fact_dosen_hibah
         description: "{{ doc('gold_fact_dosen_hibah') }}"
         columns:
-          - name: id
-            description: Manual description goes here.
+          - name: dosen_hibah_id
+            description: Surrogate key (ROW_NUMBER)
           - name: dosen_id
-            description: Manual description goes here.
-          - name: hibah_id
-            description: Manual description goes here.
+            description: FK ke dim_dosen.dosen_id
+          - name: hibah_proposal_id
+            description: FK ke dim_hibah_proposal.hibah_proposal_id
           - name: tahun
-            description: Manual description goes here.
+            description: Tahun pelaksanaan hibah
           - name: role
-            description: Manual description goes here.
-          - name: jumlah
-            description: Manual description goes here.
-          - name: jenis
-            description: Manual description goes here.
+            description: Peran dosen dalam hibah (ketua, anggota)
+          - name: jenis_hibah
+            description: Jenis hibah (penelitian, pengabdian, buku_keilmuan)
           - name: status_hibah
-            description: Manual description goes here.
+            description: Status hibah (diterima, ditolak, diusulkan)
+          - name: prodi
+            description: Program studi dosen saat proposal
+          - name: fakultas
+            description: Fakultas dosen saat proposal
 
       - name: fact_sitasi
         description: "{{ doc('gold_fact_sitasi') }}"
         columns:
-          - name: sitasi_fact_id
-            description: Manual description goes here.
+          - name: sitasi_id
+            description: Surrogate key (ROW_NUMBER)
           - name: dosen_id
-            description: Manual description goes here.
+            description: FK ke dim_dosen.dosen_id
           - name: jurnal_id
-            description: Manual description goes here.
-          - name: tahun
-            description: Manual description goes here.
-          - name: bulan
-            description: Manual description goes here.
-          - name: hari
-            description: Manual description goes here.
-          - name: sitasi
-            description: Manual description goes here.
-          - name: jumlah_publikasi
-            description: Manual description goes here.
-          - name: doi
-            description: Manual description goes here.
-          - name: triwulan
-            description: Manual description goes here.
+            description: FK ke dim_jurnal.jurnal_id
+          - name: total_publikasi
+            description: Total publikasi dosen di jurnal tersebut
+          - name: total_internasional
+            description: Total publikasi internasional dosen di jurnal tersebut
+          - name: total_nasional
+            description: Total publikasi nasional dosen di jurnal tersebut

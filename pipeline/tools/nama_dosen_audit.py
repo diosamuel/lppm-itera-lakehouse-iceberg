@@ -175,3 +175,47 @@ clean_dosen_name_udf = F.udf(clean_dosen_name, StringType())
 def clean_nama_dosen_column(df: DataFrame, column: str = "dosen", output: str = "dosen_clean") -> DataFrame:
     """Add a cleaned name column to a Spark DataFrame."""
     return df.withColumn(output, clean_dosen_name_udf(F.col(column)))
+
+
+# ── Name standardisation for LEFT JOIN matching ────────────────
+
+def preclean_dosen_name(name):
+    """Remove garbage characters and detect invalid entries."""
+    if name is None:
+        return None, False
+    name = str(name)
+    name = name.replace("\xa0", " ").replace("\n", "").replace("\r", "").strip()
+
+    # Reject author lists (contains ",...")
+    if ",..." in name or ", ..." in name:
+        return None, False
+
+    # Reject non-person entries
+    if "Yayasan" in name or "Penerbit" in name:
+        return None, False
+
+    return name, True
+
+
+def standardize_nama_dosen(name):
+    """Clean and uppercase name root for join key."""
+    name, valid = preclean_dosen_name(name)
+    if not valid:
+        return None
+    name = clean_dosen_name(name)
+    if name is None:
+        return None
+    name = name.upper().strip()
+    # Collapse multi-space
+    name = re.sub(r"\s+", " ", name)
+    return name if name else None
+
+
+def is_valid_dosen_name(name):
+    """Flag whether a dosen name is usable (not author-list, not publisher)."""
+    _, valid = preclean_dosen_name(name)
+    return valid
+
+
+standardize_nama_dosen_udf = F.udf(standardize_nama_dosen, StringType())
+is_valid_dosen_name_udf = F.udf(is_valid_dosen_name, StringType())

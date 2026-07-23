@@ -1,8 +1,9 @@
-{% docs lookup_sdgs_docs %}
+{% docs silver_dim_sdgs %}
 
-# Lookup SDGs Documentation
+# Silver Dim SDGs
 
-This project contains lookup tables `lookup_sdgs` for SDGs categorization
+This project contains dimension table `dim_sdgs` for SDGs categorization
+in the silver layer.
 
 ## Table of SDGs
 | No | Value |
@@ -29,7 +30,7 @@ This project contains lookup tables `lookup_sdgs` for SDGs categorization
 | 20 | Kepeloporan |
 | 21 | Dasar Fundamental |
 
-Lookups are used in the gold layer dimension models to ensure consistent
+This dimension is used in the gold layer dimension models to ensure consistent
 data classification and categorization.
 
 {% enddocs %}

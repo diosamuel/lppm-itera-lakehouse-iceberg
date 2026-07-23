@@ -188,3 +188,33 @@ print("Written silver.dim_skema")
 SparkSession.sql("DROP TABLE IF EXISTS silver.dim_sdgs")
 run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_sdgs.sql")
 print("Written silver.dim_sdgs")
+
+# Dimensi Dosen (Gold)
+SparkSession.sql("DROP TABLE IF EXISTS gold.dim_dosen")
+run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_dosen.sql")
+print("Written gold.dim_dosen")
+
+# Dimensi Jurnal (Gold)
+SparkSession.sql("DROP TABLE IF EXISTS gold.dim_jurnal")
+run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_jurnal.sql")
+print("Written gold.dim_jurnal")
+
+# Dimensi Hibah Proposal (Gold)
+SparkSession.sql("DROP TABLE IF EXISTS gold.dim_hibah_proposal")
+run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_hibah_proposal.sql")
+print("Written gold.dim_hibah_proposal")
+
+# Fakta Dosen Hibah (Gold)
+SparkSession.sql("DROP TABLE IF EXISTS gold.fact_dosen_hibah")
+run_sql_file(SparkSession, BASE_DIR / "schema" / "fact_dosen_hibah.sql")
+print("Written gold.fact_dosen_hibah")
+
+# Fakta Hibah (Gold)
+SparkSession.sql("DROP TABLE IF EXISTS gold.fact_hibah")
+run_sql_file(SparkSession, BASE_DIR / "schema" / "fact_hibah.sql")
+print("Written gold.fact_hibah")
+
+# Fakta Sitasi (Gold)
+SparkSession.sql("DROP TABLE IF EXISTS gold.fact_sitasi")
+run_sql_file(SparkSession, BASE_DIR / "schema" / "fact_sitasi.sql")
+print("Written gold.fact_sitasi")

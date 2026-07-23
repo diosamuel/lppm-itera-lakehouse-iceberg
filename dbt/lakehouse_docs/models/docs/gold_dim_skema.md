@@ -1,28 +1,25 @@
 {% docs gold_dim_skema %}
 
-## Gold Layer: Grant Scheme Dimension Table
+## Gold Layer: Skema Dimension Table
 
-This model creates a standardized dimension for grant schemes.
+Dimensi skema hibah yang diisi secara statik via SQL INSERT. Berisi 25 skema penelitian dan pengabdian.
 
 ### Data Flow
 ```
-silver_deduped → gold_dim_skema (table)
+dim_skema.sql (static INSERT) → gold.dim_skema
 ```
 
-### Dependencies
-- ``silver_deduped``
+### Grain
+- 1 row = 1 skema hibah
 
-### Transformations
-1. Extract unique grant schemes
-2. Generate surrogate key using MD5 hash of scheme name
-3. Determine maximum funding based on scheme type
+### Columns
+| Column | Type | Description |
+|--------|------|-------------|
+| `skema_id` | INT | Surrogate key (PK, 1-25) |
+| `nama_skema` | VARCHAR | Nama skema hibah |
+| `pendanaan_maks` | INT | Pendanaan maksimum (Rupiah), NULL jika tidak terdefinisi |
 
-### Funding Rules
-- **Unggulan**: max 50,000,000
-- **Utama**: max 100,000,000
-- **Default**: 25,000,000
-
-### Surrogate Key
-- `skema_id`: `MD5(SCHEME)` - unique identifier for each grant scheme
+### Business Purpose
+Memungkinkan analisis hibah berdasarkan skema dan pendanaan maksimum di Superset.
 
 {% enddocs %}

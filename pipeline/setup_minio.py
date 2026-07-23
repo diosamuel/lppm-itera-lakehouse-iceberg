@@ -1,13 +1,10 @@
 import os
 from functools import wraps
-
 import boto3
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 
 load_dotenv()
-
-
 class SetupMinioS3:
     def __init__(self, endpoint_url, access_key=None, secret_key=None, bucket=None):
         self.endpoint_url = endpoint_url or os.getenv("MINIO_ENDPOINT_URL", "http://localhost:9000")

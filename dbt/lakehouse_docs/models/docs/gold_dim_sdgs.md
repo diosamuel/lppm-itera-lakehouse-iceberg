@@ -1,17 +1,29 @@
 {% docs gold_dim_sdgs %}
 
-## Gold Layer: SDGs Dimension
+## Gold Layer: SDGs Dimension Table
 
-This table contains the Sustainable Development Goals (SDGs) and additional fundamental categories used for classification.
+Dimensi Sustainable Development Goals (SDGs) dan kategori fundamental ITERA. Diisi secara statik via SQL INSERT.
 
 ### Data Flow
 ```
-dim_sdgs (static/SQL insert)
+dim_sdgs.sql (static INSERT) → gold.dim_sdgs
 ```
 
+### Grain
+- 1 row = 1 kategori SDGs
+
 ### Columns
-- **sdgs_id**: Primary key for the dimension.
-- **kode_sdgs**: Short code (e.g., 'SDG 1').
-- **deskripsi**: Full description of the goal.
+| Column | Type | Description |
+|--------|------|-------------|
+| `sdgs_id` | INT | Surrogate key (PK, 1-21) |
+| `kode_sdgs` | VARCHAR | Kode/nama SDGs (e.g. 'SDG 1 No Poverty', 'Dasar Fundamental') |
+
+### Values
+SDG 1-17 (UN Sustainable Development Goals) + 4 kategori ITERA:
+- Dasar Fundamental
+- Hilirisasi Produk
+- ITERA for Sumatera
+- Kepeloporan
+- Revolusi Industri 4.0
 
 {% enddocs %}

@@ -1,30 +1,37 @@
 {% docs gold_fact_sitasi %}
 
-## Gold Layer: Citation Fact Table
+## Gold Layer: Sitasi Fact Table
 
-This model creates facts for citation analysis and reporting.
+Tabel fakta untuk analisis publikasi dan sitasi dosen. Grain: 1 row = 1 dosen per 1 jurnal.
 
 ### Data Flow
 ```
-silver_deduped → gold_fact_sitasi (table)
+silver.sitasi
+  → JOIN dim_dosen (ketua_peneliti = nama) → dosen_id
+  → JOIN dim_jurnal (jurnal = nama_jurnal) → jurnal_id
+  → GROUP BY dosen_id, jurnal_id
+  → gold.fact_sitasi
 ```
 
-### Dependencies
-- ``silver_deduped``
+### Grain
+- 1 row = 1 dosen per 1 jurnal (aggregated)
 
-### Transformations
-1. Generate surrogate key combining grant ID and publication date
-2. Create references to lecturer and journal dimension tables
-3. Extract citation metrics and publication details
-
-### Surrogate Keys
-- `sitasi_fact_id`: `MD5(ID || TAHUN)` - unique citation fact identifier
-- `dosen_id`: Reference to `gold_dim_dosen`
-- `jurnal_id`: Reference to `gold_dim_jurnal`
+### Columns
+| Column | Type | Description |
+|--------|------|-------------|
+| `sitasi_id` | INT | Surrogate key (PK) |
+| `dosen_id` | INT | FK ke dim_dosen.dosen_id |
+| `jurnal_id` | INT | FK ke dim_jurnal.jurnal_id |
+| `total_publikasi` | INT | Total publikasi dosen di jurnal tersebut |
+| `total_internasional` | INT | Total publikasi internasional dosen di jurnal tersebut |
+| `total_nasional` | INT | Total publikasi nasional dosen di jurnal tersebut |
 
 ### Fact Measures
-- `sitasi`: Citation count
-- `jumlah_publikasi`: Number of publications (always 1 per record)
-- `triwulan`: Quarter of publication
+- `total_publikasi`: COUNT(*) publications per (dosen, jurnal)
+- `total_internasional`: SUM(CASE WHEN kategori_jurnal = 'INTERNASIONAL')
+- `total_nasional`: SUM(CASE WHEN kategori_jurnal = 'NASIONAL')
+
+### Business Purpose
+Analisis produktivitas publikasi dosen per jurnal, kategori (internasional/nasional), dan per fakultas.
 
 {% enddocs %}

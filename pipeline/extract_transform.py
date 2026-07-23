@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from pyspark.sql import functions as F
 from pyspark.sql.types import IntegerType, LongType
+from tools.jurnal_clean import clean_publikasi_udf
 from tools.utils import (
     capture_doi_udf,
     clean_tanggal_udf,
@@ -123,8 +124,15 @@ class Transform:
             # Expand kategori/journal struct
             .withColumn("jurnal", journal["jurnal"])
             .withColumn("jurnal_kategori", journal["groups"])
+            # Expand publikasi struct
+            .withColumn("publikasi", clean_publikasi_udf(F.col("publikasi")))
+            .withColumn("jurnal_nama", F.col("publikasi.jurnal_nama"))
+            .withColumn("jurnal_volume", F.col("publikasi.jurnal_volume"))
+            .withColumn("jurnal_issue", F.col("publikasi.jurnal_issue"))
+            .withColumn("jurnal_halaman", F.col("publikasi.jurnal_halaman"))
+            .withColumn("jurnal_tahun", F.col("publikasi.jurnal_tahun"))
             # Drop intermediate & source columns
-            .drop("tanggal_terbit", "nama_dosen", "triwulan", "kategori")
+            .drop("tanggal_terbit", "nama_dosen", "triwulan", "kategori", "publikasi")
         )
 
         self._batches.append(spark_df)
