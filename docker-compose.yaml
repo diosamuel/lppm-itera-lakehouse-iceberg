@@ -17,6 +17,7 @@
 ---
 x-airflow-common: &airflow-common
   build: ./airflow
+  image: diosamuel/lppm-airflow:latest
   environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@shared-postgres/airflow
@@ -66,7 +67,7 @@ services:
     #       memory: 384M
 
   spark-iceberg:
-    image: tabulario/spark-iceberg
+    image: diosamuel/lppm-spark-iceberg:latest
     container_name: lppm-spark-iceberg
     build:
       context: .
@@ -179,6 +180,7 @@ services:
 
   superset-init:
     build: superset/
+    image: diosamuel/lppm-superset:latest
     container_name: lppm-superset-init
     depends_on:
       shared-postgres:
@@ -198,6 +200,7 @@ services:
 
   superset:
     build: superset/
+    image: diosamuel/lppm-superset:latest
     container_name: lppm-superset
     depends_on:
       superset-init:

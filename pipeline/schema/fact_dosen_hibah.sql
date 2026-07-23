@@ -46,6 +46,8 @@ SELECT
     h.prodi,
     h.fakultas
 FROM hibah_dosen h
-LEFT JOIN dim_dosen d
-    ON h.nama = d.nama
-    AND h.nip = d.nip
+LEFT JOIN gold.dim_dosen d
+    ON (h.nip IS NOT NULL AND h.nip <> '0' AND h.nip = d.nip)
+    OR ((h.nip IS NULL OR h.nip = '0')
+        AND (d.nip IS NULL OR d.nip = '0')
+        AND h.nama = d.nama)
