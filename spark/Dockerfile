@@ -47,7 +47,10 @@ ENV SPARK_MAJOR_VERSION=3.5
 ENV ICEBERG_VERSION=1.10.1
 
 # Download spark (with local fallback)
-COPY bin/spark-3.5.6-bin-hadoop3.tgz /tmp/spark-local.tgz
+# COPY bin/spark-3.5.6-bin-hadoop3.tgz /tmp/spark-local.tgz
+RUN curl -L --retry 5 --retry-delay 10 --connect-timeout 30 \
+    "https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz" \
+    -o /tmp/spark-local.tgz
 
 RUN mkdir -p ${SPARK_HOME} \
  && (curl -L --retry 5 --retry-delay 10 --connect-timeout 30 "https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz" -o /tmp/spark.tgz \
@@ -62,7 +65,7 @@ RUN mkdir -p ${SPARK_HOME} \
 #  && curl -L --retry 5 --retry-delay 10 https://archive.apache.org/dist/spark/spark-4.1.1/spark-4.1.1-bin-hadoop3.tgz -o spark.tgz \
 #  && tar -xzf spark.tgz -C /opt/spark --strip-components=1 \
 #  && rm spark.tgz
- 
+
 # Download iceberg spark runtime
 RUN curl https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtime-${SPARK_MAJOR_VERSION}_2.12/${ICEBERG_VERSION}/iceberg-spark-runtime-${SPARK_MAJOR_VERSION}_2.12-${ICEBERG_VERSION}.jar -Lo /opt/spark/jars/iceberg-spark-runtime-${SPARK_MAJOR_VERSION}_2.12-${ICEBERG_VERSION}.jar
 
