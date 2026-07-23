@@ -10,7 +10,7 @@
 
 ---
 
-## Stack
+## Stacks
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
