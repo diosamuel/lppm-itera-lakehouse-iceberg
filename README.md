@@ -87,24 +87,76 @@ docker compose down -v
 ```
 
 
-# Fokus hari ini
-1. ekstrak dokumen
-2. buat tabel fakta
-3. bikin dashboard
+## dbt Docs
 
-Total pendanaan : 128.909.280.121 (~129M)
+The `dbt/lakehouse_docs` project is a documentation-only layer (no `dbt run`).
+Edit table/column descriptions in `dbt/lakehouse_docs/models/sources.yml`.
 
+Generate & serve docs:
 
+```bash
+# Generate documentation (queries Trino for catalog metadata)
+uv run dbt docs generate --project-dir dbt/lakehouse_docs --profiles-dir dbt/lakehouse_docs
 
-yang sudah ada dimension and fact
+# Serve docs at http://localhost:8090
+uv run dbt docs serve --project-dir dbt/lakehouse_docs --profiles-dir dbt/lakehouse_docs --port 8090
 
-1. dim sdgs (done, manual)
-2. dim skema (done, manual)
-3. dim dosen (done)
-4. fact dosen hibah (done)
-5. dim jurnal (done)
-6. fact sitasi
-7. fact hibah
-8. dim_hibah_proposal
-9. dim_hibah_progress
-10. dim_hibah_final
+# Generate without querying Trino (manual docs only)
+uv run dbt docs generate --project-dir dbt/lakehouse_docs --profiles-dir dbt/lakehouse_docs --empty-catalog
+```
+
+## Edit Schema
+
+Gold layer schemas are defined in two places:
+
+| File | Purpose |
+|------|---------|
+| `pipeline/schema/goldSchema.py` | Iceberg table schemas (PyIceberg `Schema` objects) |
+| `pipeline/schema/*.sql` | SQL transformations (Bronze → Silver → Gold) |
+
+To add/edit a column:
+
+1. Update the `Schema(...)` definition in `pipeline/schema/goldSchema.py`.
+2. Update the corresponding `SELECT` in `pipeline/schema/<table>.sql`.
+3. Reset the Iceberg tables (see below) and re-run the pipeline:
+   ```bash
+   ./reset_iceberg_tables.sh
+   uv run python pipeline/index.py
+   ```
+
+## Reset Iceberg Tables
+
+`reset_iceberg_tables.sh` wipes Iceberg table data (silver + gold) and the REST
+catalog SQLite DB, **without** touching raw source files in `sipaper/` or
+Superset/Airflow metadata in Postgres.
+
+```bash
+# Interactive (prompts for confirmation)
+./reset_iceberg_tables.sh
+
+# Skip confirmation
+./reset_iceberg_tables.sh -y
+```
+
+What it does:
+
+| Step | Action |
+|------|--------|
+| 1 | Stop trino, airflow, spark-iceberg, rest |
+| 2 | Delete `minio_data/warehouse/{silver,gold}` |
+| 3 | Wipe Docker volume `iceberg-rest-catalog` (SQLite catalog DB) |
+| 4 | Restart `rest` + `minio` |
+
+After reset, re-run the pipeline:
+
+```bash
+uv run python pipeline/index.py
+```
+
+To wipe **everything** including raw source files and Postgres (Superset,
+Airflow):
+
+```bash
+docker compose down -v
+docker compose up -d
+```
