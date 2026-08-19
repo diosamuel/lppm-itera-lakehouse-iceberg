@@ -6,3 +6,6 @@ python-dotenv
 boto3
 pdfplumber
 trino
+grpcio
+grpcio-status
+protobuf>=4.25.0

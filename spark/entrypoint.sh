@@ -20,6 +20,12 @@
 start-master.sh -p 7077
 start-worker.sh spark://spark-iceberg:7077
 
+# Spark Connect server (Spark 3.4+). The 3.5.6 binary distribution does not
+# bundle the server jars, so pull them (and gRPC/protobuf transitives) from
+# Maven Central via --packages.
+start-connect-server.sh --master spark://spark-iceberg:7077 \
+  --packages org.apache.spark:spark-connect_2.12:${SPARK_VERSION}
+
 start-history-server.sh
 
 # Clean stale Derby metastore to avoid "Directory already exists" errors
