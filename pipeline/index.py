@@ -2,9 +2,9 @@ import os
 from pathlib import Path
 
 from pyspark.sql import functions as F
-from pyspark.sql.window import Window
 
-from extract_transform import Transform
+from tools.extract_transform import Transform
+from tools.dosen_name_mapper import map_dosen_name_udf
 from setup_catalog import SetupIcebergCatalog
 from setup_minio import SetupMinioS3
 from setup_spark import SetupSpark
@@ -117,7 +117,14 @@ res = (
 )
 res = res.withColumn(
     "id",
-    F.concat(F.lit("PENELITIAN-"), F.row_number().over(Window.orderBy("judul_proposal"))),
+    F.concat(
+        F.lit("PENELITIAN-"),
+        F.xxhash64(
+            F.coalesce(F.col("judul_proposal"), F.lit("")),
+            F.coalesce(F.col("ketua_peneliti"), F.lit("")),
+            F.col("tahun"),
+        ).cast("string"),
+    ),
 )
 res.writeTo("silver.penelitian").createOrReplace()
 print("Written silver.penelitian")
@@ -142,7 +149,14 @@ res = (
 )
 res = res.withColumn(
     "id",
-    F.concat(F.lit("PENGABDIAN-"), F.row_number().over(Window.orderBy("judul_proposal"))),
+    F.concat(
+        F.lit("PENGABDIAN-"),
+        F.xxhash64(
+            F.coalesce(F.col("judul_proposal"), F.lit("")),
+            F.coalesce(F.col("ketua_peneliti"), F.lit("")),
+            F.col("tahun"),
+        ).cast("string"),
+    ),
 )
 res.writeTo("silver.pengabdian").createOrReplace()
 print("Written silver.pengabdian")
@@ -161,7 +175,14 @@ res = (
 )
 res = res.withColumn(
     "id",
-    F.concat(F.lit("BUKU_KEILMUAN-"), F.row_number().over(Window.orderBy("judul_proposal"))),
+    F.concat(
+        F.lit("BUKU_KEILMUAN-"),
+        F.xxhash64(
+            F.coalesce(F.col("judul_proposal"), F.lit("")),
+            F.coalesce(F.col("ketua_peneliti"), F.lit("")),
+            F.col("tahun"),
+        ).cast("string"),
+    ),
 )
 res.writeTo("silver.buku_keilmuan").createOrReplace()
 print("Written silver.buku_keilmuan")
@@ -173,8 +194,19 @@ csv_sitasi = [
 
 res = Transform(spark=SparkSession, document_type="sitasi").processSitasiData(csv_sitasi[0]["path"], 2026).join()
 res = res.withColumn(
+    "ketua_peneliti",
+    map_dosen_name_udf(F.col("ketua_peneliti")),
+)
+res = res.withColumn(
     "id",
-    F.concat(F.lit("SITASI-"), F.row_number().over(Window.orderBy("judul_proposal"))),
+    F.concat(
+        F.lit("SITASI-"),
+        F.xxhash64(
+            F.coalesce(F.col("judul_proposal"), F.lit("")),
+            F.coalesce(F.col("ketua_peneliti"), F.lit("")),
+            F.coalesce(F.col("doi"), F.lit("")),
+        ).cast("string"),
+    ),
 )
 res.writeTo("silver.sitasi").createOrReplace()
 print("Written silver.sitasi")
@@ -190,31 +222,25 @@ run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_sdgs.sql")
 print("Written silver.dim_sdgs")
 
 # Dimensi Dosen (Gold)
-SparkSession.sql("DROP TABLE IF EXISTS gold.dim_dosen")
 run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_dosen.sql")
 print("Written gold.dim_dosen")
 
 # Dimensi Jurnal (Gold)
-SparkSession.sql("DROP TABLE IF EXISTS gold.dim_jurnal")
 run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_jurnal.sql")
 print("Written gold.dim_jurnal")
 
 # Dimensi Hibah Proposal (Gold)
-SparkSession.sql("DROP TABLE IF EXISTS gold.dim_hibah_proposal")
 run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_hibah_proposal.sql")
 print("Written gold.dim_hibah_proposal")
 
 # Fakta Dosen Hibah (Gold)
-SparkSession.sql("DROP TABLE IF EXISTS gold.fact_dosen_hibah")
 run_sql_file(SparkSession, BASE_DIR / "schema" / "fact_dosen_hibah.sql")
 print("Written gold.fact_dosen_hibah")
 
 # Fakta Hibah (Gold)
-SparkSession.sql("DROP TABLE IF EXISTS gold.fact_hibah")
 run_sql_file(SparkSession, BASE_DIR / "schema" / "fact_hibah.sql")
 print("Written gold.fact_hibah")
 
 # Fakta Sitasi (Gold)
-SparkSession.sql("DROP TABLE IF EXISTS gold.fact_sitasi")
 run_sql_file(SparkSession, BASE_DIR / "schema" / "fact_sitasi.sql")
 print("Written gold.fact_sitasi")
