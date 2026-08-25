@@ -1,8 +1,8 @@
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.decorators import dag, task
 from airflow.operators.empty import EmptyOperator
+from airflow.operators.bash import BashOperator
 from datetime import datetime, timedelta
-from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 import json
 
 RAW_FILES = [
@@ -65,7 +65,7 @@ def diffManifest(prev,curr):
 def isRunPipeline(diff):
     for val in diff.values():
         if val["changed"]:
-            return "runLoadData"
+            return "init_gold"
     return "skip"
 
 @task
@@ -79,16 +79,9 @@ def writeManifest(diff):
     return diff
 
 @task
-def runLoadData(diff):
-    changed = []
-    for key, value in diff.items():
-        if value["changed"]:
-            changed.append(key)
-
-    print(diff)
-    print("--file changed--")
-    print(changed)
-    # process by file changed
+def logChangedFiles(diff):
+    changed = [k for k, v in diff.items() if v["changed"]]
+    print(f"Changed files triggering pipeline: {changed}")
 
 @dag(
     dag_id="check_raw_etag",
@@ -103,14 +96,26 @@ def runLoadData(diff):
 def checkRawETagDag():
     prev = loadPrevManifest()
     current = fetchCurrentETag()
-    diff = diffManifest(prev,current)
+    diff = diffManifest(prev, current)
 
     branch = isRunPipeline(diff)
     written = writeManifest(diff)
+    logged = logChangedFiles(diff)
 
-    run = runLoadData(written)
+    init_gold = BashOperator(
+        task_id="init_gold",
+        bash_command="docker exec lppm-spark-iceberg spark-submit --deploy-mode client /home/iceberg/pipeline/schema/goldSchema.py",
+    )
+
+    run_pipeline = BashOperator(
+        task_id="run_pipeline",
+        bash_command="docker exec lppm-spark-iceberg spark-submit --deploy-mode client /home/iceberg/pipeline/index.py",
+    )
+
     skip = EmptyOperator(task_id="skip")
 
-    branch >> [run,skip]
+    written >> logged >> init_gold
+    branch >> [init_gold, skip]
+    init_gold >> run_pipeline
 
 checkRawETagDag()

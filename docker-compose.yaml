@@ -34,7 +34,10 @@ x-airflow-common: &airflow-common
     - airflow-logs:/opt/airflow/logs
     - ./airflow/config:/opt/airflow/config
     - ./airflow/plugins:/opt/airflow/plugins
+    - /var/run/docker.sock:/var/run/docker.sock
   user: "${AIRFLOW_UID:-50000}:0"
+  group_add:
+    - "${DOCKER_GID:-986}"
   networks:
     iceberg_net:
   depends_on: &airflow-common-depends-on
@@ -80,6 +83,7 @@ services:
     volumes:
       - ./spark/notebooks/:/home/iceberg/notebooks
       - ./pipeline/:/home/iceberg/pipeline
+      - ./spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
     environment:
       - AWS_ACCESS_KEY_ID=admin
       - AWS_SECRET_ACCESS_KEY=password

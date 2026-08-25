@@ -70,12 +70,8 @@ class Transform:
         return spark_df
 
     def processData(self, df, tahun):
-        """
-        df = raw CSV bytes or StorageS3.load() response dict
-        """
-        spark_df = self.spark.read.option("header", "true").option("inferSchema", "true").csv(df)
         rename_map = self.RENAME_MAPS.get(self.document_type, self.RENAME_MAPS["penelitian"])
-        spark_df = self.renameAndCast(spark_df, rename_map)
+        spark_df = self.renameAndCast(df, rename_map)
 
         # Transform
         transformed = (
@@ -101,8 +97,7 @@ class Transform:
         return self
 
     def processSitasiData(self, df, tahun):
-        spark_df = self.spark.read.option("header", "true").option("inferSchema", "true").csv(df)
-        spark_df = self.renameAndCast(spark_df, self.RENAME_MAPS["sitasi"])
+        spark_df = self.renameAndCast(df, self.RENAME_MAPS["sitasi"])
 
         # Extract components from tanggal_terbit
         tanggal = clean_tanggal_udf(F.col("tanggal_terbit"))
