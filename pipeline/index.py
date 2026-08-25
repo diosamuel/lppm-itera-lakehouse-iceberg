@@ -1,17 +1,14 @@
 import os
 from pathlib import Path
-
 from pyspark.sql import functions as F
-
-from tools.extract_transform import Transform
+from transform.extract_transform import Transform
 from tools.dosen_name_mapper import map_dosen_name_udf
-from setup_catalog import SetupIcebergCatalog
-from setup_minio import SetupMinioS3
-from setup_spark import SetupSpark
-
+from transform.xlsx_clean import clean_xlsx_sheet, list_xlsx_year_sheets
+from setup.setup_catalog import SetupIcebergCatalog
+from setup.setup_minio import SetupMinioS3
+from setup.setup_spark import SetupSpark
 
 BASE_DIR = Path(__file__).resolve().parent
-
 
 def run_sql_file(spark, sql_file):
     sql_text = Path(sql_file).read_text(encoding="utf-8")
@@ -97,24 +94,26 @@ for file in list_directory:
             filepath=f"/home/iceberg/notebooks/data/{file}",
         )
 
-# Penelitian
-csv_penelitian = [
-    StorageS3.load("penelitian/2021/csv/penelitian_2021.csv"),
-    StorageS3.load("penelitian/2022/csv/penelitian_2022.csv"),
-    StorageS3.load("penelitian/2023/csv/penelitian_2023.csv"),
-    StorageS3.load("penelitian/2024/csv/penelitian_2024.csv"),
-    StorageS3.load("penelitian/2025/csv/penelitian_2025.csv"),
-]
+RAW_XLSX = os.getenv("RAW_XLSX_PATH", "s3a://sipaper/raw_data_penelitian.xlsx")
+PENELITIAN_SHEETS = list_xlsx_year_sheets(RAW_XLSX, StorageS3.client)
+print(f"Penelitian year sheets: {PENELITIAN_SHEETS}")
+csv_penelitian = []
+for sheet in PENELITIAN_SHEETS:
+    out = f"s3a://sipaper/penelitian/{sheet}/csv/penelitian_{sheet}.csv"
+    (
+        clean_xlsx_sheet(SparkSession, RAW_XLSX, sheet)
+        .coalesce(1)
+        .write
+        .mode("overwrite")
+        .option("header", "true")
+        .csv(out)
+    )
+    csv_penelitian.append((out, int(sheet)))
 
-res = (
-    Transform(spark=SparkSession, document_type="penelitian")
-    .processData(csv_penelitian[0]["path"], 2021)
-    .processData(csv_penelitian[1]["path"], 2022)
-    .processData(csv_penelitian[2]["path"], 2023)
-    .processData(csv_penelitian[3]["path"], 2024)
-    .processData(csv_penelitian[4]["path"], 2025)
-    .join()
-)
+penelitian_builder = Transform(spark=SparkSession, document_type="penelitian")
+for path, year in csv_penelitian:
+    penelitian_builder.processData(path, year)
+res = penelitian_builder.join()
 res = res.withColumn(
     "id",
     F.concat(
@@ -130,23 +129,26 @@ res.writeTo("silver.penelitian").createOrReplace()
 print("Written silver.penelitian")
 
 # Pengabdian
-csv_pengabdian = [
-    StorageS3.load("pengabdian/2021/csv/pengabdian_2021.csv"),
-    StorageS3.load("pengabdian/2022/csv/pengabdian_2022.csv"),
-    StorageS3.load("pengabdian/2023/csv/pengabdian_2023.csv"),
-    StorageS3.load("pengabdian/2024/csv/pengabdian_2024.csv"),
-    StorageS3.load("pengabdian/2025/csv/pengabdian_2025.csv"),
-]
+RAW_PENGABDIAN_XLSX = os.getenv("RAW_PENGABDIAN_XLSX_PATH", "s3a://sipaper/raw_data_pengabdian.xlsx")
+PENGABDIAN_SHEETS = list_xlsx_year_sheets(RAW_PENGABDIAN_XLSX, StorageS3.client)
+print(f"Pengabdian year sheets: {PENGABDIAN_SHEETS}")
+csv_pengabdian = []
+for sheet in PENGABDIAN_SHEETS:
+    out = f"s3a://sipaper/pengabdian/{sheet}/csv/pengabdian_{sheet}.csv"
+    (
+        clean_xlsx_sheet(SparkSession, RAW_PENGABDIAN_XLSX, sheet)
+        .coalesce(1)
+        .write
+        .mode("overwrite")
+        .option("header", "true")
+        .csv(out)
+    )
+    csv_pengabdian.append((out, int(sheet)))
 
-res = (
-    Transform(spark=SparkSession, document_type="pengabdian")
-    .processData(csv_pengabdian[0]["path"], 2021)
-    .processData(csv_pengabdian[1]["path"], 2022)
-    .processData(csv_pengabdian[2]["path"], 2023)
-    .processData(csv_pengabdian[3]["path"], 2024)
-    .processData(csv_pengabdian[4]["path"], 2025)
-    .join()
-)
+pengabdian_builder = Transform(spark=SparkSession, document_type="pengabdian")
+for path, year in csv_pengabdian:
+    pengabdian_builder.processData(path, year)
+res = pengabdian_builder.join()
 res = res.withColumn(
     "id",
     F.concat(
@@ -162,17 +164,26 @@ res.writeTo("silver.pengabdian").createOrReplace()
 print("Written silver.pengabdian")
 
 # Buku Keilmuan
-csv_buku_keilmuan = [
-    StorageS3.load("buku_keilmuan/2023/csv/buku_keilmuan_2023.csv"),
-    StorageS3.load("buku_keilmuan/2024/csv/buku_keilmuan_2024.csv"),
-]
+RAW_BUKU_KEILMUAN_XLSX = os.getenv("RAW_BUKU_KEILMUAN_XLSX_PATH", "s3a://sipaper/raw_data_buku_keilmuan.xlsx")
+BUKU_KEILMUAN_SHEETS = list_xlsx_year_sheets(RAW_BUKU_KEILMUAN_XLSX, StorageS3.client)
+print(f"Buku Keilmuan year sheets: {BUKU_KEILMUAN_SHEETS}")
+csv_buku_keilmuan = []
+for sheet in BUKU_KEILMUAN_SHEETS:
+    out = f"s3a://sipaper/buku_keilmuan/{sheet}/csv/buku_keilmuan_{sheet}.csv"
+    (
+        clean_xlsx_sheet(SparkSession, RAW_BUKU_KEILMUAN_XLSX, sheet)
+        .coalesce(1)
+        .write
+        .mode("overwrite")
+        .option("header", "true")
+        .csv(out)
+    )
+    csv_buku_keilmuan.append((out, int(sheet)))
 
-res = (
-    Transform(spark=SparkSession, document_type="buku_keilmuan")
-    .processData(csv_buku_keilmuan[0]["path"], 2023)
-    .processData(csv_buku_keilmuan[1]["path"], 2024)
-    .join()
-)
+buku_builder = Transform(spark=SparkSession, document_type="buku_keilmuan")
+for path, year in csv_buku_keilmuan:
+    buku_builder.processData(path, year)
+res = buku_builder.join()
 res = res.withColumn(
     "id",
     F.concat(
@@ -188,11 +199,22 @@ res.writeTo("silver.buku_keilmuan").createOrReplace()
 print("Written silver.buku_keilmuan")
 
 # Sitasi
-csv_sitasi = [
-    StorageS3.load("sitasi/2026/csv/sitasi_2026.csv"),
-]
-
-res = Transform(spark=SparkSession, document_type="sitasi").processSitasiData(csv_sitasi[0]["path"], 2026).join()
+RAW_SITASI_XLSX = os.getenv("RAW_SITASI_XLSX_PATH", "s3a://sipaper/raw_data_sitasi.xlsx")
+SITASI_SHEETS = list_xlsx_year_sheets(RAW_SITASI_XLSX, StorageS3.client)
+print(f"Sitasi year sheets: {SITASI_SHEETS}")
+sitasi_builder = Transform(spark=SparkSession, document_type="sitasi")
+for sheet in SITASI_SHEETS:
+    out = f"s3a://sipaper/sitasi/{sheet}/csv/sitasi_{sheet}.csv"
+    (
+        clean_xlsx_sheet(SparkSession, RAW_SITASI_XLSX, sheet)
+        .coalesce(1)
+        .write
+        .mode("overwrite")
+        .option("header", "true")
+        .csv(out)
+    )
+    sitasi_builder.processSitasiData(out, int(sheet))
+res = sitasi_builder.join()
 res = res.withColumn(
     "ketua_peneliti",
     map_dosen_name_udf(F.col("ketua_peneliti")),
@@ -215,32 +237,25 @@ print("Written silver.sitasi")
 SparkSession.sql("DROP TABLE IF EXISTS silver.dim_skema")
 run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_skema.sql")
 print("Written silver.dim_skema")
-
 # SDGs Mapping
 SparkSession.sql("DROP TABLE IF EXISTS silver.dim_sdgs")
 run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_sdgs.sql")
 print("Written silver.dim_sdgs")
-
 # Dimensi Dosen (Gold)
 run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_dosen.sql")
 print("Written gold.dim_dosen")
-
 # Dimensi Jurnal (Gold)
 run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_jurnal.sql")
 print("Written gold.dim_jurnal")
-
 # Dimensi Hibah Proposal (Gold)
 run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_hibah_proposal.sql")
 print("Written gold.dim_hibah_proposal")
-
 # Fakta Dosen Hibah (Gold)
 run_sql_file(SparkSession, BASE_DIR / "schema" / "fact_dosen_hibah.sql")
 print("Written gold.fact_dosen_hibah")
-
 # Fakta Hibah (Gold)
 run_sql_file(SparkSession, BASE_DIR / "schema" / "fact_hibah.sql")
 print("Written gold.fact_hibah")
-
 # Fakta Sitasi (Gold)
 run_sql_file(SparkSession, BASE_DIR / "schema" / "fact_sitasi.sql")
 print("Written gold.fact_sitasi")

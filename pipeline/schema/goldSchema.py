@@ -7,8 +7,8 @@ from pyiceberg.types import IntegerType, LongType, NestedField, StringType, Time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from setup_catalog import SetupIcebergCatalog
-from setup_spark import SetupSpark
+from setup.setup_catalog import SetupIcebergCatalog
+from setup.setup_spark import SetupSpark
 
 load_dotenv()
 

@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 from pyspark.sql import functions as F
 from pyspark.sql.types import IntegerType, LongType
-from tools.jurnal_clean import clean_publikasi_udf
+from transform.jurnal_clean import clean_publikasi_udf
 from tools.utils import (
     capture_doi_udf,
     clean_tanggal_udf,

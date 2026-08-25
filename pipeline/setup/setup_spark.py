@@ -18,7 +18,7 @@ class SetupSpark:
 
     def initialize(self):
         # input tools to spark worker
-        pipeline_dir = os.path.dirname(os.path.abspath(__file__))
+        pipeline_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         existing = os.environ.get("PYTHONPATH", "")
         os.environ["PYTHONPATH"] = f"{pipeline_dir}:{existing}".rstrip(":")
 
@@ -52,6 +52,7 @@ class SetupSpark:
             .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
             # Default catalog
             .config("spark.sql.defaultCatalog", self.catalog_name)
+            .config("spark.jars.packages","com.crealytics:spark-excel_2.12:3.5.1_0.20.4")
             # Make pipeline modules importable inside UDFs on every worker
             .config("spark.executorEnv.PYTHONPATH", pipeline_dir)
             .getOrCreate()

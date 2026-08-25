@@ -223,6 +223,5 @@ gen_test*
 dosen_missing_in_dim.csv
 dosen_reject.csv
 dosen_name_mapping.csv
-
-
 .opencode
+raw/
