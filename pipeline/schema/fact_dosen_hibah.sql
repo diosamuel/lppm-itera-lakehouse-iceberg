@@ -1,4 +1,4 @@
-CREATE TABLE gold.fact_dosen_hibah AS
+CREATE OR REPLACE TABLE gold.fact_dosen_hibah USING iceberg PARTITIONED BY (identity(tahun)) AS
 WITH hibah_lengkap AS (
     select id, jenis, tahun, status, nama_anggota_dosen, nip_anggota_dosen, ketua_peneliti, nip_ketua_peneliti, prodi, fakultas from silver.penelitian
     union all
@@ -36,7 +36,7 @@ hibah_dosen AS (
 )
 
 SELECT
-    ROW_NUMBER() OVER (ORDER BY d.dosen_id, h.hibah_proposal_id) AS dosen_hibah_id,
+    CAST(xxhash64(COALESCE(d.dosen_id, 0), h.hibah_proposal_id, h.role) AS INT) AS dosen_hibah_id,
     d.dosen_id,
     h.hibah_proposal_id,
     h.tahun,

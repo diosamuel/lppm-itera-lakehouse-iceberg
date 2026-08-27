@@ -1,6 +1,7 @@
-#sudo docker compose up -d
+# Start the lakehouse stack
+docker compose up -d
 
-# Initialize gold schema
-sudo docker compose exec spark-iceberg python /home/iceberg/pipeline/schema/goldSchema.py
-# Initialize silver schema
-sudo docker exec -it lppm-spark-iceberg python3 /home/iceberg/pipeline/index.py
+# Run the full pipeline (silver + gold)
+docker compose exec spark-iceberg spark-submit \
+  --deploy-mode client \
+  /home/iceberg/pipeline/index.py

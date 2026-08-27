@@ -1,5 +1,5 @@
 USE default.gold;
-CREATE TABLE dim_dosen AS
+CREATE OR REPLACE TABLE dim_dosen USING iceberg AS
 WITH hibah_lengkap AS (
     select nama_anggota_dosen, nip_anggota_dosen, ketua_peneliti, nip_ketua_peneliti from silver.penelitian
     union all
@@ -20,7 +20,7 @@ dosen_rows AS (
     LATERAL VIEW EXPLODE(arrays_zip(nama_anggota_dosen, nip_anggota_dosen)) AS t
 )
 SELECT
-    ROW_NUMBER() OVER (ORDER BY nama) AS dosen_id,
+    CAST(xxhash64(COALESCE(nama, ''), COALESCE(nip, '')) AS INT) AS dosen_id,
     nama,
     nip
 FROM (

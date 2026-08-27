@@ -48,23 +48,13 @@ ENV ICEBERG_VERSION=1.10.1
 
 # Download spark (with local fallback)
 COPY bin/spark-3.5.6-bin-hadoop3.tgz /tmp/spark-local.tgz
-#RUN curl -L --retry 5 --retry-delay 10 --connect-timeout 30 \
-#    "https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz" \
-#    -o /tmp/spark-local.tgz
 
-RUN mkdir -p ${SPARK_HOME} \
- && (curl -L --retry 5 --retry-delay 10 --connect-timeout 30 "https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz" -o /tmp/spark.tgz \
-     && tar -xzf /tmp/spark.tgz -C /opt/spark --strip-components=1 \
-     && rm /tmp/spark.tgz) \
- || (echo "Download failed, using local fallback..." \
-     && cp /tmp/spark-local.tgz /tmp/spark.tgz \
-     && tar -xzf /tmp/spark.tgz -C /opt/spark --strip-components=1 \
-     && rm /tmp/spark.tgz)
-
-# RUN mkdir -p /opt/spark \
-#  && curl -L --retry 5 --retry-delay 10 https://archive.apache.org/dist/spark/spark-4.1.1/spark-4.1.1-bin-hadoop3.tgz -o spark.tgz \
-#  && tar -xzf spark.tgz -C /opt/spark --strip-components=1 \
-#  && rm spark.tgz
+# Extract Spark into SPARK_HOME. This must run BEFORE the jar download steps
+# below, because they write into /opt/spark/jars/, which only exists after
+# extraction. Without this, curl fails with exit code 23 ("Failure writing
+# output to destination") since the target directory does not exist.
+RUN tar -xzf /tmp/spark-local.tgz -C ${SPARK_HOME} --strip-components=1 \
+ && rm /tmp/spark-local.tgz
 
 # Download iceberg spark runtime
 RUN curl https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtime-${SPARK_MAJOR_VERSION}_2.12/${ICEBERG_VERSION}/iceberg-spark-runtime-${SPARK_MAJOR_VERSION}_2.12-${ICEBERG_VERSION}.jar -Lo /opt/spark/jars/iceberg-spark-runtime-${SPARK_MAJOR_VERSION}_2.12-${ICEBERG_VERSION}.jar
@@ -75,6 +65,10 @@ RUN curl -s https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-aws-bundle
 # Download Hadoop AWS and AWS SDK for S3AFileSystem
 RUN curl -s https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.4/hadoop-aws-3.3.4.jar -Lo /opt/spark/jars/hadoop-aws-3.3.4.jar
 RUN curl -s https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.262/aws-java-sdk-bundle-1.12.262.jar -Lo /opt/spark/jars/aws-java-sdk-bundle-1.12.262.jar
+
+# Spark Avro data source - required by Iceberg to read Avro manifest/metadata
+# files via Spark SQL (format("avro")). Not bundled with Spark since 2.4.
+RUN curl -s https://repo1.maven.org/maven2/org/apache/spark/spark-avro_2.12/${SPARK_VERSION}/spark-avro_2.12-${SPARK_VERSION}.jar -Lo /opt/spark/jars/spark-avro_2.12-${SPARK_VERSION}.jar
 
 # Download GCP bundle
 RUN curl -s https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-gcp-bundle/${ICEBERG_VERSION}/iceberg-gcp-bundle-${ICEBERG_VERSION}.jar -Lo /opt/spark/jars/iceberg-gcp-bundle-${ICEBERG_VERSION}.jar

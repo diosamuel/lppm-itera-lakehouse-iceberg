@@ -213,3 +213,15 @@ spark-warehouse/
 airflow/logs/
 airflow/.env
 .bruin.yml
+
+# test bigger data
+test_data_1gb/
+upload_test_csv.py
+sipaper.xlsx
+gen_test*
+.graphify-out/
+dosen_missing_in_dim.csv
+dosen_reject.csv
+dosen_name_mapping.csv
+.opencode
+raw/
