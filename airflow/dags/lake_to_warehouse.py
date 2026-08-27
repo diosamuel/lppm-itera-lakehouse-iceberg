@@ -66,7 +66,7 @@ def isRunPipeline(diff):
     for val in diff.values():
         if val["changed"]:
             return "transformData"
-    return "NoFileChanged"
+    return "noFileChanged"
 
 @task
 def writeNewManifest(diff):
@@ -97,10 +97,10 @@ def lakeToWarehouse():
         task_id="transformData",
         bash_command="docker exec lppm-spark-iceberg spark-submit --deploy-mode client /home/iceberg/pipeline/index.py",
     )
-    NoFileChanged = EmptyOperator(task_id="NoFileChanged")
+    noFileChanged = EmptyOperator(task_id="noFileChanged")
     writeManifest = writeNewManifest(diff)
 
-    branch >> [transformData, NoFileChanged]
+    branch >> [transformData, noFileChanged]
     transformData >> writeManifest
 
 lakeToWarehouse()

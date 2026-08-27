@@ -1,6 +1,13 @@
 USE default.gold;
 
-INSERT INTO dim_prodi (prodi_id, nama_prodi, nama_fakultas) VALUES
+CREATE OR REPLACE TABLE gold.dim_prodi (
+    prodi_id INT,
+    nama_prodi STRING,
+    nama_fakultas STRING
+) USING ICEBERG;
+
+
+INSERT INTO gold.dim_prodi (prodi_id, nama_prodi, nama_fakultas) VALUES
 (1, 'AKTUARIA', 'Fakultas Sains'),
 (2, 'BIOLOGI', 'Fakultas Sains'),
 (3, 'FARMASI', 'Fakultas Sains'),
