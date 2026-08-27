@@ -27,7 +27,7 @@ BUCKET = "sipaper"
 MANIFEST_KEY = "_manifest/etag.json"
 
 @task
-def loadPrevManifest():
+def loadCurrentManifest():
     hook = S3Hook(aws_conn_id="minio_s3")
     try:
         body = hook.read_key(bucket_name=BUCKET,key=MANIFEST_KEY)
@@ -52,7 +52,7 @@ def fetchCurrentETag():
     return out
 
 @task
-def diffManifest(prev,curr):
+def checkDiffManifest(prev,curr):
     # compare previous etag vs current etag
     result = {}
     for key,info in curr.items():
@@ -65,27 +65,21 @@ def diffManifest(prev,curr):
 def isRunPipeline(diff):
     for val in diff.values():
         if val["changed"]:
-            return "init_audit_wap"
-    return "skip"
+            return "transformData"
+    return "NoFileChanged"
 
 @task
-def writeManifest(diff):
+def writeNewManifest(diff):
     S3Hook(aws_conn_id="minio_s3").load_string(
         json.dumps(diff),
         key=MANIFEST_KEY,
         bucket_name=BUCKET,
         replace=True
     )
-    return diff
-
-@task
-def logChangedFiles(diff):
-    changed = [k for k, v in diff.items() if v["changed"]]
-    print(f"Changed files triggering pipeline: {changed}")
 
 @dag(
-    dag_id="check_raw_etag",
-    start_date = datetime(2026,1,1),
+    dag_id="lake_to_warehouse",
+    start_date=datetime(2026,1,1),
     schedule="@daily",
     catchup=False,
     default_args={
@@ -93,28 +87,20 @@ def logChangedFiles(diff):
         "retry_delay":timedelta(minutes=5)
     }
 )
-def checkRawETagDag():
-    prev = loadPrevManifest()
+def lakeToWarehouse():
+    prev = loadCurrentManifest()
     current = fetchCurrentETag()
-    diff = diffManifest(prev, current)
-
+    diff = checkDiffManifest(prev, current)
     branch = isRunPipeline(diff)
-    written = writeManifest(diff)
-    logged = logChangedFiles(diff)
 
-    run_pipeline = BashOperator(
-        task_id="run_pipeline",
+    transformData = BashOperator(
+        task_id="transformData",
         bash_command="docker exec lppm-spark-iceberg spark-submit --deploy-mode client /home/iceberg/pipeline/index.py",
     )
+    NoFileChanged = EmptyOperator(task_id="NoFileChanged")
+    writeManifest = writeNewManifest(diff)
 
-    init_audit_wap = BashOperator(
-        task_id="init_audit_wap",
-        bash_command="docker exec lppm-spark-iceberg spark-submit --deploy-mode client /home/iceberg/pipeline/schema/auditSchema.py",
-    )
+    branch >> [transformData, NoFileChanged]
+    transformData >> writeManifest
 
-    skip = EmptyOperator(task_id="skip")
-
-    written >> logged >> init_audit_wap >> run_pipeline
-    branch >> [init_audit_wap, skip]
-
-checkRawETagDag()
+lakeToWarehouse()

@@ -1,5 +1,11 @@
 USE default.gold;
 
+CREATE OR REPLACE TABLE dim_skema (
+    skema_id INT,
+    nama_skema STRING,
+    pendanaan_maks INT
+) USING iceberg;
+
 INSERT INTO dim_skema (skema_id, nama_skema, pendanaan_maks) VALUES
 (1, 'GBU 45', NULL),
 (2, 'Kolaborasi', NULL),
