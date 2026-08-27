@@ -105,25 +105,6 @@ uv run dbt docs serve --project-dir dbt/lakehouse_docs --profiles-dir dbt/lakeho
 uv run dbt docs generate --project-dir dbt/lakehouse_docs --profiles-dir dbt/lakehouse_docs --empty-catalog
 ```
 
-## Edit Schema
-
-Gold layer schemas are defined in two places:
-
-| File | Purpose |
-|------|---------|
-| `pipeline/schema/goldSchema.py` | Iceberg table schemas (PyIceberg `Schema` objects) |
-| `pipeline/schema/*.sql` | SQL transformations (Bronze → Silver → Gold) |
-
-To add/edit a column:
-
-1. Update the `Schema(...)` definition in `pipeline/schema/goldSchema.py`.
-2. Update the corresponding `SELECT` in `pipeline/schema/<table>.sql`.
-3. Reset the Iceberg tables (see below) and re-run the pipeline:
-   ```bash
-   ./reset_iceberg_tables.sh
-   uv run python pipeline/index.py
-   ```
-
 ## Reset Iceberg Tables
 
 `reset_iceberg_tables.sh` wipes Iceberg table data (silver + gold) and the REST

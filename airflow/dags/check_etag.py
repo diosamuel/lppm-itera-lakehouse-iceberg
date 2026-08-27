@@ -65,7 +65,7 @@ def diffManifest(prev,curr):
 def isRunPipeline(diff):
     for val in diff.values():
         if val["changed"]:
-            return "init_gold"
+            return "init_audit_wap"
     return "skip"
 
 @task
@@ -102,20 +102,19 @@ def checkRawETagDag():
     written = writeManifest(diff)
     logged = logChangedFiles(diff)
 
-    init_gold = BashOperator(
-        task_id="init_gold",
-        bash_command="docker exec lppm-spark-iceberg spark-submit --deploy-mode client /home/iceberg/pipeline/schema/goldSchema.py",
-    )
-
     run_pipeline = BashOperator(
         task_id="run_pipeline",
         bash_command="docker exec lppm-spark-iceberg spark-submit --deploy-mode client /home/iceberg/pipeline/index.py",
     )
 
+    init_audit_wap = BashOperator(
+        task_id="init_audit_wap",
+        bash_command="docker exec lppm-spark-iceberg spark-submit --deploy-mode client /home/iceberg/pipeline/schema/auditSchema.py",
+    )
+
     skip = EmptyOperator(task_id="skip")
 
-    written >> logged >> init_gold
-    branch >> [init_gold, skip]
-    init_gold >> run_pipeline
+    written >> logged >> init_audit_wap >> run_pipeline
+    branch >> [init_audit_wap, skip]
 
 checkRawETagDag()
