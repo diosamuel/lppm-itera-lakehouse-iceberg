@@ -1,154 +1,153 @@
-import os
 from pathlib import Path
+
 from pyspark.sql import functions as F
-from transform.extract_transform import Transform
-from tools.dosen_name_mapper import map_dosen_name_udf
-from transform.xlsx_clean import clean_xlsx_sheet, list_xlsx_year_sheets
 from setup.setup_catalog import SetupIcebergCatalog
-from setup.setup_minio import SetupMinioS3
 from setup.setup_spark import SetupSpark
+from tools.dosen_name_mapper import map_dosen_name_udf
+from transform.extract_transform import Transform
 
 BASE_DIR = Path(__file__).resolve().parent
+
 def run_sql_file(spark, sql_file):
     sql_text = (BASE_DIR / "schema" / sql_file).read_text(encoding="utf-8")
     statements = [statement.strip() for statement in sql_text.split(";") if statement.strip()]
     for statement in statements:
         spark.sql(statement)
 
-StorageS3 = SetupMinioS3(
-    endpoint_url="http://minio:9000",
-    bucket="sipaper",
-).initialize()
 
-IcebergCatalog = SetupIcebergCatalog(
-    catalog_name="default",
-    namespace="silver",
-).initialize()
-IcebergCatalog.create_namespace("gold")
+def year_sheets_from_bronze(spark, table):
+    rows = (
+        spark.read.table(table)
+        .select("tahun")
+        .distinct()
+        .orderBy("tahun")
+        .collect()
+    )
+    return [str(r.tahun) for r in rows]
 
-SparkSession = SetupSpark(
-    app_name="sipaper",
-    catalog_name="default",
-).initialize()
 
-RAW_XLSX = os.getenv("RAW_XLSX_PATH", "s3a://sipaper/raw_data_penelitian.xlsx")
-PENELITIAN_SHEETS = list_xlsx_year_sheets(RAW_XLSX, StorageS3.client)
-print(f"Penelitian year sheets: {PENELITIAN_SHEETS}")
+def _bronze_df(spark, category, bronze_cache=None):
+    if bronze_cache and category in bronze_cache:
+        return bronze_cache[category]
+    return spark.read.table(f"bronze.{category}")
 
-penelitian_builder = Transform(spark=SparkSession, document_type="penelitian")
-for sheet in PENELITIAN_SHEETS:
-    df = clean_xlsx_sheet(SparkSession, RAW_XLSX, sheet)
-    penelitian_builder.processData(df, int(sheet))
-res = penelitian_builder.join()
-res = res.withColumn(
-    "id",
-    F.concat(
-        F.lit("PENELITIAN-"),
-        F.xxhash64(
-            F.coalesce(F.col("judul_proposal"), F.lit("")),
-            F.coalesce(F.col("ketua_peneliti"), F.lit("")),
-            F.col("tahun"),
-        ).cast("string"),
-    ),
-)
-res.writeTo("silver.penelitian").createOrReplace()
-print("Written silver.penelitian")
 
-RAW_PENGABDIAN_XLSX = os.getenv("RAW_PENGABDIAN_XLSX_PATH", "s3a://sipaper/raw_data_pengabdian.xlsx")
-PENGABDIAN_SHEETS = list_xlsx_year_sheets(RAW_PENGABDIAN_XLSX, StorageS3.client)
-print(f"Pengabdian year sheets: {PENGABDIAN_SHEETS}")
+def _build_silver_hibah(spark, category, bronze_cache, id_prefix):
+    builder = Transform(spark=spark, document_type=category)
+    for sheet in year_sheets_from_bronze(spark, f"bronze.{category}"):
+        df = (
+            _bronze_df(spark, category, bronze_cache)
+            .filter(F.col("tahun") == int(sheet))
+            .drop("tahun")
+        )
+        builder.processData(df, int(sheet))
+    res = builder.join()
+    res = res.withColumn(
+        "id",
+        F.concat(
+            F.lit(id_prefix),
+            F.xxhash64(
+                F.coalesce(F.col("judul_proposal"), F.lit("")),
+                F.coalesce(F.col("ketua_peneliti"), F.lit("")),
+                F.col("tahun"),
+            ).cast("string"),
+        ),
+    )
+    res.writeTo(f"silver.{category}").createOrReplace()
+    print(f"Written silver.{category}")
 
-pengabdian_builder = Transform(spark=SparkSession, document_type="pengabdian")
-for sheet in PENGABDIAN_SHEETS:
-    df = clean_xlsx_sheet(SparkSession, RAW_PENGABDIAN_XLSX, sheet)
-    pengabdian_builder.processData(df, int(sheet))
-res = pengabdian_builder.join()
-res = res.withColumn(
-    "id",
-    F.concat(
-        F.lit("PENGABDIAN-"),
-        F.xxhash64(
-            F.coalesce(F.col("judul_proposal"), F.lit("")),
-            F.coalesce(F.col("ketua_peneliti"), F.lit("")),
-            F.col("tahun"),
-        ).cast("string"),
-    ),
-)
-res.writeTo("silver.pengabdian").createOrReplace()
-print("Written silver.pengabdian")
 
-RAW_BUKU_KEILMUAN_XLSX = os.getenv("RAW_BUKU_KEILMUAN_XLSX_PATH", "s3a://sipaper/raw_data_buku_keilmuan.xlsx")
-BUKU_KEILMUAN_SHEETS = list_xlsx_year_sheets(RAW_BUKU_KEILMUAN_XLSX, StorageS3.client)
-print(f"Buku Keilmuan year sheets: {BUKU_KEILMUAN_SHEETS}")
+def _build_silver_sitasi(spark, bronze_cache):
+    builder = Transform(spark=spark, document_type="sitasi")
+    for sheet in year_sheets_from_bronze(spark, "bronze.sitasi"):
+        df = (
+            _bronze_df(spark, "sitasi", bronze_cache)
+            .filter(F.col("tahun") == int(sheet))
+            .drop("tahun")
+        )
+        builder.processSitasiData(df, int(sheet))
+    res = builder.join()
+    res = res.withColumn(
+        "ketua_peneliti",
+        map_dosen_name_udf(F.col("ketua_peneliti")),
+    )
+    res = res.withColumn(
+        "id",
+        F.concat(
+            F.lit("SITASI-"),
+            F.xxhash64(
+                F.coalesce(F.col("judul_proposal"), F.lit("")),
+                F.coalesce(F.col("ketua_peneliti"), F.lit("")),
+                F.coalesce(F.col("doi"), F.lit("")),
+            ).cast("string"),
+        ),
+    )
+    res.writeTo("silver.sitasi").createOrReplace()
+    print("Written silver.sitasi")
 
-buku_builder = Transform(spark=SparkSession, document_type="buku_keilmuan")
-for sheet in BUKU_KEILMUAN_SHEETS:
-    df = clean_xlsx_sheet(SparkSession, RAW_BUKU_KEILMUAN_XLSX, sheet)
-    buku_builder.processData(df, int(sheet))
-res = buku_builder.join()
-res = res.withColumn(
-    "id",
-    F.concat(
-        F.lit("BUKU_KEILMUAN-"),
-        F.xxhash64(
-            F.coalesce(F.col("judul_proposal"), F.lit("")),
-            F.coalesce(F.col("ketua_peneliti"), F.lit("")),
-            F.col("tahun"),
-        ).cast("string"),
-    ),
-)
-res.writeTo("silver.buku_keilmuan").createOrReplace()
-print("Written silver.buku_keilmuan")
 
-RAW_SITASI_XLSX = os.getenv("RAW_SITASI_XLSX_PATH", "s3a://sipaper/raw_data_sitasi.xlsx")
-SITASI_SHEETS = list_xlsx_year_sheets(RAW_SITASI_XLSX, StorageS3.client)
-print(f"Sitasi year sheets: {SITASI_SHEETS}")
-sitasi_builder = Transform(spark=SparkSession, document_type="sitasi")
-for sheet in SITASI_SHEETS:
-    df = clean_xlsx_sheet(SparkSession, RAW_SITASI_XLSX, sheet)
-    sitasi_builder.processSitasiData(df, int(sheet))
-res = sitasi_builder.join()
-res = res.withColumn(
-    "ketua_peneliti",
-    map_dosen_name_udf(F.col("ketua_peneliti")),
-)
-res = res.withColumn(
-    "id",
-    F.concat(
-        F.lit("SITASI-"),
-        F.xxhash64(
-            F.coalesce(F.col("judul_proposal"), F.lit("")),
-            F.coalesce(F.col("ketua_peneliti"), F.lit("")),
-            F.coalesce(F.col("doi"), F.lit("")),
-        ).cast("string"),
-    ),
-)
-res.writeTo("silver.sitasi").createOrReplace()
-print("Written silver.sitasi")
+SILVER_BUILDERS = {
+    "penelitian": lambda spark, cache: _build_silver_hibah(spark, "penelitian", cache, "PENELITIAN-"),
+    "pengabdian": lambda spark, cache: _build_silver_hibah(spark, "pengabdian", cache, "PENGABDIAN-"),
+    "buku_keilmuan": lambda spark, cache: _build_silver_hibah(spark, "buku_keilmuan", cache, "BUKU_KEILMUAN-"),
+    "sitasi": _build_silver_sitasi,
+}
 
-run_sql_file(SparkSession,"dim_prodi.sql")
-print("Written gold.dim_prodi")
 
-run_sql_file(SparkSession, "dim_skema.sql")
-print("Written gold.dim_skema")
+GOLD_DDL_FILES = [
+    "dim_prodi.sql",
+    "dim_skema.sql",
+    "dim_sdgs.sql",
+    "dim_dosen.sql",
+    "dim_jurnal.sql",
+    "dim_hibah_proposal.sql",
+    "fact_hibah.sql",
+    "fact_dosen_hibah.sql",
+    "fact_sitasi.sql",
+]
 
-run_sql_file(SparkSession, "dim_sdgs.sql")
-print("Written gold.dim_sdgs")
 
-run_sql_file(SparkSession, "dim_dosen.sql")
-print("Written gold.dim_dosen")
+def _build_gold(spark):
+    for sql_file in GOLD_DDL_FILES:
+        run_sql_file(spark, sql_file)
+        print(f"Written gold.{sql_file.removesuffix('.sql')}")
 
-run_sql_file(SparkSession, "dim_jurnal.sql")
-print("Written gold.dim_jurnal")
 
-run_sql_file(SparkSession, "dim_hibah_proposal.sql")
-print("Written gold.dim_hibah_proposal")
+def run_silver_gold(spark, bronze_cache=None, categories=None):
+    """Build silver and gold tables.
 
-run_sql_file(SparkSession, "fact_hibah.sql")
-print("Written gold.fact_hibah")
+    Args:
+        spark: active SparkSession.
+        bronze_cache: optional {category: DataFrame} cache from the bronze
+            ingest step (avoids re-reading changed categories).
+        categories: iterable of silver categories to rebuild. None (default) means
+            all categories. Silver tables outside `categories` are left untouched;
+            gold is always fully rebuilt from the resulting silver tables.
+    """
+    if categories is None:
+        categories = list(SILVER_BUILDERS.keys())
+    categories = set(categories)
 
-run_sql_file(SparkSession, "fact_dosen_hibah.sql")
-print("Written gold.fact_dosen_hibah")
+    for category, build in SILVER_BUILDERS.items():
+        if category not in categories:
+            print(f"Skipped silver.{category} (not in changed categories)")
+            continue
+        build(spark, bronze_cache)
 
-run_sql_file(SparkSession, "fact_sitasi.sql")
-print("Written gold.fact_sitasi")
+    _build_gold(spark)
+
+
+if __name__ == "__main__":
+    IcebergCatalog = SetupIcebergCatalog(
+        catalog_name="default",
+        namespace="silver",
+    ).initialize()
+    IcebergCatalog.create_namespace("bronze")
+    IcebergCatalog.create_namespace("gold")
+    # audit/DQ namespace — tabel hasil data-quality check (dq.dq_results, dst.)
+    IcebergCatalog.create_namespace("dq")
+    SparkSession = SetupSpark(
+        app_name="sipaper",
+        catalog_name="default",
+    ).initialize()
+    run_silver_gold(SparkSession)

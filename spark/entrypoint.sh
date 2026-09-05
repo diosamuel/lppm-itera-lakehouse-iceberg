@@ -24,7 +24,7 @@ start-worker.sh spark://spark-iceberg:7077
 # bundle the server jars, so pull them (and gRPC/protobuf transitives) from
 # Maven Central via --packages.
 start-connect-server.sh --master spark://spark-iceberg:7077 \
-  --total-executor-cores 2 \
+  --total-executor-cores 1 \
   --packages org.apache.spark:spark-connect_2.12:${SPARK_VERSION}
 
 start-history-server.sh
