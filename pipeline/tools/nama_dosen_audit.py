@@ -1,9 +1,5 @@
 import re
 
-from pyspark.sql import DataFrame
-from pyspark.sql import functions as F
-from pyspark.sql.types import StringType
-
 DEGREES = [
     "S.T",
     "M.T",
@@ -169,16 +165,6 @@ def clean_dosen_name(name):
     return name if name else None
 
 
-clean_dosen_name_udf = F.udf(clean_dosen_name, StringType())
-
-
-def clean_nama_dosen_column(df: DataFrame, column: str = "dosen", output: str = "dosen_clean") -> DataFrame:
-    """Add a cleaned name column to a Spark DataFrame."""
-    return df.withColumn(output, clean_dosen_name_udf(F.col(column)))
-
-
-# ── Name standardisation for LEFT JOIN matching ────────────────
-
 def preclean_dosen_name(name):
     """Remove garbage characters and detect invalid entries."""
     if name is None:
@@ -209,13 +195,3 @@ def standardize_nama_dosen(name):
     # Collapse multi-space
     name = re.sub(r"\s+", " ", name)
     return name if name else None
-
-
-def is_valid_dosen_name(name):
-    """Flag whether a dosen name is usable (not author-list, not publisher)."""
-    _, valid = preclean_dosen_name(name)
-    return valid
-
-
-standardize_nama_dosen_udf = F.udf(standardize_nama_dosen, StringType())
-is_valid_dosen_name_udf = F.udf(is_valid_dosen_name, StringType())

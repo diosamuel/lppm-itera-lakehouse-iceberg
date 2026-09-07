@@ -1,21 +1,24 @@
-"""DAG: Data Quality Check (skema silver).
+"""DAG: Data Quality Check + WAP repair (skema silver + dosen sitasi).
 
-Menjalankan pipeline/quality_check/dq_runner.py di dalam container spark.
-Semua logika DQ ada di dq_runner.py — DAG hanya orkestrasi (no redundant code).
+Alur check → repair → check:
+  1. dq_pre   : pipeline/quality_check/dq_runner.py  (baseline, ditulis ke dq.dq_report)
+  2. wap_swap : pipeline/write/swapped_skema_sdgs.py (fix skema/sdgs tertukar, branch audit-swap)
+  3. wap_dosen: pipeline/write/dosen_mapping.py      (map + insert dosen sitasi, branch audit-dosen)
+  4. dq_post  : pipeline/quality_check/dq_runner.py  (verifikasi setelah repair)
 
-Check yang dijalankan (lihat dq_runner.py untuk detail):
-  1. Consistency — anomaly tertukar skema/sdgs
-  2. Completeness — NULL pada kolom wajib
-  3. Referential integrity — skema/sdgs/prodi vs dim_*
+Kedua WAP melempar exit code 1 saat publish di-BLOCK (gate gagal). Karena
+@task.bash mempropagasi exit code, DAG otomatis berhenti (task gagal) dan
+dq_post TIDAK dijalankan — tidak ada laporan sukses palsu.
 
-Hasil ditulis ke Iceberg `dq.dq_results` (namespace `dq` dibuat oleh
-pipeline/index.py). Jalankan setelah DAG lake_to_warehouse agar silver
-sudah diperbarui.
+Semua logika audit/WAP ada di pipeline/write + pipeline/quality_check —
+DAG hanya orkestrasi (no redundant code).
+
+Jalankan SETELAH DAG lake_to_warehouse agar silver+gold sudah diperbarui
+(rebuild gold.dim_dosen akan menghapus insert WAP dosen, jadi urutan ini penting).
 """
 from datetime import datetime, timedelta
 
-from airflow.decorators import dag
-from airflow.operators.bash import BashOperator
+from airflow.decorators import dag, task
 
 
 @dag(
@@ -24,16 +27,43 @@ from airflow.operators.bash import BashOperator
     schedule="30 0 * * *",  # 00:30 WIB, setelah lake_to_warehouse (@daily)
     catchup=False,
     default_args={"retries": 1, "retry_delay": timedelta(minutes=5)},
-    description="Data quality check pada skema silver -> dq.dq_results",
+    description="DQ check -> WAP repair (skema/sdgs + dosen) -> DQ check ulang",
 )
 def dataQualityCheck():
-    BashOperator(
-        task_id="run_dq_check",
-        bash_command=(
+    @task.bash
+    def dq_pre():
+        return (
             "docker exec lppm-spark-iceberg spark-submit --deploy-mode client "
             "/home/iceberg/pipeline/quality_check/dq_runner.py"
-        ),
-    )
+        )
+
+    @task.bash
+    def wap_swap_skema_sdgs():
+        return (
+            "docker exec lppm-spark-iceberg spark-submit --deploy-mode client "
+            "/home/iceberg/pipeline/write/swapped_skema_sdgs.py"
+        )
+
+    @task.bash
+    def wap_dosen_mapping():
+        return (
+            "docker exec lppm-spark-iceberg spark-submit --deploy-mode client "
+            "/home/iceberg/pipeline/write/dosen_mapping.py"
+        )
+
+    @task.bash
+    def dq_post():
+        return (
+            "docker exec lppm-spark-iceberg spark-submit --deploy-mode client "
+            "/home/iceberg/pipeline/quality_check/dq_runner.py"
+        )
+
+    pre = dq_pre()
+    swap = wap_swap_skema_sdgs()
+    dosen = wap_dosen_mapping()
+    post = dq_post()
+
+    pre >> swap >> dosen >> post
 
 
 dataQualityCheck()
