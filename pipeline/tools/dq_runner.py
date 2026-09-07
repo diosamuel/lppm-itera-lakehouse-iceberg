@@ -1,16 +1,18 @@
 import sys
+from pathlib import Path
+
+# Must be set before any local pipeline imports so Python can resolve them
+BASE = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE))
+
 import uuid
 from datetime import datetime, timezone
-from pathlib import Path
 from setup.setup_spark import SetupSpark
 from write.swapped_skema_sdgs import audit
 from audit.null_check import checkNulls
 from audit.validity_check import checkValidity
 from audit.uniqueness_check import checkUniqueness
 from pyspark.sql import types as T
-
-BASE = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(BASE))
 
 # konfigurasi check per tabel silver
 CHECKS = {

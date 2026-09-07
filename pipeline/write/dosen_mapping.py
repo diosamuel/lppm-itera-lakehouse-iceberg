@@ -25,13 +25,14 @@ Jalankan (di dalam container spark):
 
 import sys
 from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE))
+
 from pyspark.sql import functions as F
 from pyspark.sql.types import BooleanType
 from setup.setup_spark import SetupSpark
 from tools.nama_dosen_audit import standardize_nama_dosen
-
-BASE = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(BASE))
 
 SITASI = "silver.sitasi"
 DIM = "gold.dim_dosen"

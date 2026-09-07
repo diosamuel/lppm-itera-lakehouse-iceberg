@@ -1,10 +1,11 @@
 import sys
 from pathlib import Path
-from setup.setup_spark import SetupSpark
-from pyspark.sql import functions as F
 
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE))
+
+from setup.setup_spark import SetupSpark
+from pyspark.sql import functions as F
 
 TABLES = ["silver.penelitian", "silver.pengabdian"]
 BRANCH = "audit-swap"

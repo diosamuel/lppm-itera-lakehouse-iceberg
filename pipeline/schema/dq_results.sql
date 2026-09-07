@@ -1,3 +1,5 @@
+CREATE NAMESPACE IF NOT EXISTS default.dq;
+
 CREATE TABLE IF NOT EXISTS dq.dq_report (
     -- Unique identifier for one Data Quality execution/run
     run_id          STRING,
