@@ -8,7 +8,7 @@ sys.path.insert(0, str(BASE))
 import uuid
 from datetime import datetime, timezone
 from setup.setup_spark import SetupSpark
-from write.swapped_skema_sdgs import audit
+from audit.audit_table import audit
 from audit.null_check import checkNulls
 from audit.validity_check import checkValidity
 from audit.uniqueness_check import checkUniqueness
@@ -82,6 +82,9 @@ def main():
     spark = SetupSpark(app_name="dq-check-silver", catalog_name="default").initialize()
     spark.sparkContext.setLogLevel("WARN")
     spark.sql("USE default")
+    
+    # Ensure dq namespace exists before creating table
+    spark.sql("CREATE NAMESPACE IF NOT EXISTS default.dq")
     runSqlFile(spark, "dq_results.sql")
 
     run_id = str(uuid.uuid4())

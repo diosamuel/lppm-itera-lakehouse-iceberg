@@ -47,7 +47,7 @@ docker compose exec spark-iceberg spark-submit --deploy-mode client /home/iceber
 - `pipeline/tools/nama_dosen_audit.py` — dosen-name helpers: `clean_dosen_name`, `preclean_dosen_name`, `standardize_nama_dosen`. **Reuse these; do not duplicate.**
 - `pipeline/tools/dosen_name_mapper.py` — maps raw names to `dim_dosen` (see `dosen_name_mapping.csv` at repo root); single consumer of `standardize_nama_dosen`. Applied to silver.sitasi `ketua_peneliti` at silver build.
 - `pipeline/audit/` — DQ check helpers consumed by `dq_runner.py`: `null_check.py` (completeness), `validity_check.py` (ref-table match — incl. `valid_ketua_peneliti`: silver.sitasi dosen vs `gold.dim_dosen.nama`, currently 19/190 unmatched), `uniqueness_check.py`
-- `pipeline/audit/swapped_skema_sdgs.py` + `pipeline/quality_check/schema_sdgs.sql` — detect/repair swapped skema↔SDGs values. Contains a working standalone WAP flow (`wap_write` → branch `audit-swap` → gates → `wap_publish` fast-forward), but it is NOT wired into the pipeline/Airflow — run manually.
+- `pipeline/audit/audit_table.py` + `pipeline/quality_check/schema_sdgs.sql` — detect/repair swapped skema↔SDGs values & purge null judul_proposal rows. Contains a working standalone WAP flow (`wap_write` → branch `audit-swap` → gates → `wap_publish` fast-forward).
 - Unmatched sitasi dosen (fix pending, discussed later): root CSVs define the taxonomy — `dosen_name_mapping.csv` (variant→dim), `dosen_missing_in_dim.csv` (valid dosen without hibah records → need new dim rows), `dosen_reject.csv` (author lists / non-person names → reject)
 
 ## Conventions

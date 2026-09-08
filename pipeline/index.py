@@ -3,7 +3,10 @@ from pathlib import Path
 from pyspark.sql import functions as F
 from setup.setup_catalog import SetupIcebergCatalog
 from setup.setup_spark import SetupSpark
-from tools.dosen_name_mapper import map_dosen_name_udf
+try:
+    from tools.dosen_name_mapper import map_dosen_name_udf
+except ModuleNotFoundError:
+    from transform.tools.dosen_name_mapper import map_dosen_name_udf
 from transform.extract_transform import Transform
 
 BASE_DIR = Path(__file__).resolve().parent

@@ -20,6 +20,7 @@
 WITH checked AS (
     SELECT
         h.id,
+        h.judul_proposal,
         h.skema,
         h.sdgs,
         sm.nama_skema  AS skema_match,
@@ -33,6 +34,8 @@ WITH checked AS (
     LEFT JOIN gold.dim_sdgs  dm2 ON LOWER(TRIM(h.skema)) = LOWER(TRIM(dm2.kode_sdgs))
 )
 SELECT
+    SUM(CASE WHEN judul_proposal IS NULL OR TRIM(CAST(judul_proposal AS string)) = ''
+         THEN 1 ELSE 0 END) AS null_judul,
     SUM(CASE WHEN skema_match IS NULL AND sdgs_match IS NULL
               AND skema_is_sdgs IS NOT NULL AND sdgs_is_skema IS NOT NULL
          THEN 1 ELSE 0 END) AS both_swapped,

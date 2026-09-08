@@ -2,7 +2,7 @@
 
 Alur check → repair → check:
   1. dq_pre   : pipeline/quality_check/dq_runner.py  (baseline, ditulis ke dq.dq_report)
-  2. wap_swap : pipeline/write/swapped_skema_sdgs.py (fix skema/sdgs tertukar, branch audit-swap)
+  2. wap_swap : pipeline/audit/audit_table.py       (fix null judul + skema/sdgs tertukar, branch audit-swap)
   3. wap_dosen: pipeline/write/dosen_mapping.py      (map + insert dosen sitasi, branch audit-dosen)
   4. dq_post  : pipeline/quality_check/dq_runner.py  (verifikasi setelah repair)
 
@@ -41,7 +41,7 @@ def dataQualityCheck():
     def wap_swap_skema_sdgs():
         return (
             "docker exec lppm-spark-iceberg spark-submit --deploy-mode client "
-            "/home/iceberg/pipeline/write/swapped_skema_sdgs.py"
+            "/home/iceberg/pipeline/audit/audit_table.py"
         )
 
     @task.bash
