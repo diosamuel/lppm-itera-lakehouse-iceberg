@@ -38,7 +38,7 @@ def dataQualityCheck():
         )
 
     @task.bash
-    def wap_swap_skema_sdgs():
+    def wap_audit_table():
         return (
             "docker exec lppm-spark-iceberg spark-submit --deploy-mode client "
             "/home/iceberg/pipeline/audit/audit_table.py"
@@ -59,7 +59,7 @@ def dataQualityCheck():
         )
 
     pre = dq_pre()
-    swap = wap_swap_skema_sdgs()
+    swap = wap_audit_table()
     dosen = wap_dosen_mapping()
     post = dq_post()
 
