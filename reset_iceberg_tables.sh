@@ -47,7 +47,7 @@ echo "  Services stopped (or were already down)"
 echo ""
 echo "[2/4] Deleting warehouse data from MinIO volume..."
 
-for layer in silver gold bronze; do
+for layer in silver gold bronze dq; do
     target="./minio_data/warehouse/${layer}"
     if [ -d "$target" ]; then
         rm -rf "${target:?}"

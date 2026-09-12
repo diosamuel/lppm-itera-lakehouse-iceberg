@@ -1,15 +1,15 @@
+import sys
 from pathlib import Path
 
+BASE_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(BASE_DIR))
+
 from pyspark.sql import functions as F
+# from audit.audit_table import TABLES as WAP_TABLES, wap_publish, wap_write
 from setup.setup_catalog import SetupIcebergCatalog
 from setup.setup_spark import SetupSpark
-try:
-    from tools.dosen_name_mapper import map_dosen_name_udf
-except ModuleNotFoundError:
-    from transform.tools.dosen_name_mapper import map_dosen_name_udf
+from tools.dosen_name_mapper import map_dosen_name_udf
 from transform.extract_transform import Transform
-
-BASE_DIR = Path(__file__).resolve().parent
 
 def run_sql_file(spark, sql_file):
     sql_text = (BASE_DIR / "schema" / sql_file).read_text(encoding="utf-8")
@@ -35,7 +35,7 @@ def _bronze_df(spark, category, bronze_cache=None):
     return spark.read.table(f"bronze.{category}")
 
 
-def _build_silver_hibah(spark, category, bronze_cache, id_prefix):
+def buildSilverHibah(spark, category, bronze_cache, id_prefix):
     builder = Transform(spark=spark, document_type=category)
     for sheet in year_sheets_from_bronze(spark, f"bronze.{category}"):
         df = (
@@ -60,7 +60,7 @@ def _build_silver_hibah(spark, category, bronze_cache, id_prefix):
     print(f"Written silver.{category}")
 
 
-def _build_silver_sitasi(spark, bronze_cache):
+def buildSilverSitasi(spark, bronze_cache):
     builder = Transform(spark=spark, document_type="sitasi")
     for sheet in year_sheets_from_bronze(spark, "bronze.sitasi"):
         df = (
@@ -90,10 +90,10 @@ def _build_silver_sitasi(spark, bronze_cache):
 
 
 SILVER_BUILDERS = {
-    "penelitian": lambda spark, cache: _build_silver_hibah(spark, "penelitian", cache, "PENELITIAN-"),
-    "pengabdian": lambda spark, cache: _build_silver_hibah(spark, "pengabdian", cache, "PENGABDIAN-"),
-    "buku_keilmuan": lambda spark, cache: _build_silver_hibah(spark, "buku_keilmuan", cache, "BUKU_KEILMUAN-"),
-    "sitasi": _build_silver_sitasi,
+    "penelitian": lambda spark, cache: buildSilverHibah(spark, "penelitian", cache, "PENELITIAN-"),
+    "pengabdian": lambda spark, cache: buildSilverHibah(spark, "pengabdian", cache, "PENGABDIAN-"),
+    "buku_keilmuan": lambda spark, cache: buildSilverHibah(spark, "buku_keilmuan", cache, "BUKU_KEILMUAN-"),
+    "sitasi": buildSilverSitasi,
 }
 
 
@@ -110,13 +110,62 @@ GOLD_DDL_FILES = [
 ]
 
 
-def _build_gold(spark):
+def buildGoldTable(spark):
     for sql_file in GOLD_DDL_FILES:
         run_sql_file(spark, sql_file)
         print(f"Written gold.{sql_file.removesuffix('.sql')}")
 
 
-def run_silver_gold(spark, bronze_cache=None, categories=None):
+# Gold tables downstream of the silver tables repaired by the data_quality_check
+# DAG (silver hibah + silver.sitasi). The static dims (dim_prodi, dim_skema,
+# dim_sdgs) are deliberately excluded, so a rebuild does not touch all of gold.
+# dim_dosen is handled separately in rebuildGoldDependents (see below).
+GOLD_DEPENDENT_FILES = [
+    "dim_hibah_proposal.sql",
+    "fact_hibah.sql",
+    "fact_dosen_hibah.sql",
+    "dim_jurnal.sql",
+    "fact_sitasi.sql",
+]
+
+
+def rebuildGoldDependents(spark):
+    """Rebuild only the gold tables downstream of the data_quality_check repairs.
+
+    The DAG repairs silver.penelitian/pengabdian/buku_keilmuan (purge null judul,
+    swap skema/sdgs) and silver.sitasi (dosen mapping). Gold was built from the
+    pre-repair silver, so those tables are stale. Order matters:
+
+    1. dim_dosen is rebuilt from its hibah-only DDL first. This intentionally
+       drops the sitasi-derived dosen rows the dosen WAP had added.
+    2. The dosen WAP is re-applied, re-inserting those sitasi dosen. It must run
+       before fact_sitasi, which joins dim_dosen to resolve dosen_id.
+    3. The remaining dependent dims/facts are rebuilt.
+    """
+    from write.dosen_mapping import (
+        build_name_lookup,
+        register_invalid_udf,
+        wap_publish,
+        wap_write_dim_dosen,
+        wap_write_sitasi,
+    )
+
+    run_sql_file(spark, "dim_dosen.sql")
+    print("Written gold.dim_dosen")
+
+    register_invalid_udf(spark)
+    lookup = build_name_lookup(spark)
+    wap_write_sitasi(spark, lookup)
+    wap_write_dim_dosen(spark)
+    if not wap_publish(spark):
+        raise RuntimeError("dosen WAP publish diblokir — rebuild gold dibatalkan")
+
+    for sql_file in GOLD_DEPENDENT_FILES:
+        run_sql_file(spark, sql_file)
+        print(f"Written gold.{sql_file.removesuffix('.sql')}")
+
+
+def runSilverGold(spark, bronze_cache=None, categories=None):
     """Build silver and gold tables.
 
     Args:
@@ -137,7 +186,12 @@ def run_silver_gold(spark, bronze_cache=None, categories=None):
             continue
         build(spark, bronze_cache)
 
-    _build_gold(spark)
+    # print("Running WAP audit & repair on silver tables...")
+    # for t in WAP_TABLES:
+    #     wap_write(spark, t)
+    #     wap_publish(spark, t)
+
+    buildGoldTable(spark)
 
 
 if __name__ == "__main__":
@@ -145,12 +199,12 @@ if __name__ == "__main__":
         catalog_name="default",
         namespace="silver",
     ).initialize()
-    IcebergCatalog.create_namespace("bronze")
-    IcebergCatalog.create_namespace("gold")
+    # IcebergCatalog.create_namespace("bronze")
+    # IcebergCatalog.create_namespace("gold")
     # audit/DQ namespace — tabel hasil data-quality check (dq.dq_results, dst.)
-    IcebergCatalog.create_namespace("dq")
+    # IcebergCatalog.create_namespace("dq")
     SparkSession = SetupSpark(
         app_name="sipaper",
         catalog_name="default",
     ).initialize()
-    run_silver_gold(SparkSession)
+    runSilverGold(SparkSession)

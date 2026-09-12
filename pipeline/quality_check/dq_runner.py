@@ -83,8 +83,8 @@ def main():
     spark.sparkContext.setLogLevel("WARN")
     spark.sql("USE default")
     
-    # Ensure dq namespace exists before creating table
-    spark.sql("CREATE NAMESPACE IF NOT EXISTS default.dq")
+    # The 'dq' namespace is expected to exist; skip creation to avoid ServiceFailureException.
+    # Run the DQ schema DDL which will create the dq.dq_report table if needed.
     runSqlFile(spark, "dq_results.sql")
 
     run_id = str(uuid.uuid4())

@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 from bronze import CATEGORIES, ingest_category
-from index import run_silver_gold
+from index import runSilverGold
 from setup.setup_catalog import SetupIcebergCatalog
 from setup.setup_minio import SetupMinioS3
 from setup.setup_spark import SetupSpark
@@ -20,6 +20,7 @@ if __name__ == "__main__":
     ).initialize()
     IcebergCatalog.create_namespace("bronze")
     IcebergCatalog.create_namespace("gold")
+    IcebergCatalog.create_namespace("dq")
     SparkSession = SetupSpark(
         app_name="sipaper-pipeline",
         catalog_name="default",
@@ -37,7 +38,7 @@ if __name__ == "__main__":
         if cached is not None:
             bronze_cache[category] = cached
 
-    run_silver_gold(SparkSession, bronze_cache=bronze_cache, categories=changed)
+    runSilverGold(SparkSession, bronze_cache=bronze_cache, categories=changed)
 
     for df in bronze_cache.values():
         df.unpersist()

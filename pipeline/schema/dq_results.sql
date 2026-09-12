@@ -1,4 +1,4 @@
-CREATE NAMESPACE IF NOT EXISTS default.dq;
+-- Namespace creation is handled in dq_runner.py
 
 CREATE TABLE IF NOT EXISTS dq.dq_report (
     -- Unique identifier for one Data Quality execution/run
