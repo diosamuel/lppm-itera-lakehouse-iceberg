@@ -2,7 +2,7 @@
 
 Alur check → repair → rebuild → check:
   1. dq_pre    : pipeline/quality_check/dq_runner.py  (baseline, ditulis ke dq.dq_report)
-  2. wap_swap  : pipeline/audit/audit_table.py       (fix null judul + skema/sdgs tertukar, branch audit-swap)
+  2. wap_swap  : pipeline/audit/audit_table.py       (hibah: fix null judul + skema/sdgs tertukar; sitasi: purge null judul, branch audit-swap)
   3. wap_dosen : pipeline/write/dosen_mapping.py      (map + insert dosen sitasi, branch audit-dosen)
   4. rebuild   : pipeline/rebuild_gold.py             (rebuild gold yang bergantung pada silver di atas)
   5. dq_post   : pipeline/quality_check/dq_runner.py  (verifikasi setelah repair)
