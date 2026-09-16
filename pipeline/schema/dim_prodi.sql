@@ -1,0 +1,52 @@
+USE default.gold;
+
+CREATE OR REPLACE TABLE gold.dim_prodi (
+    prodi_id INT,
+    nama_prodi STRING,
+    nama_fakultas STRING
+) USING ICEBERG;
+
+
+INSERT INTO gold.dim_prodi (prodi_id, nama_prodi, nama_fakultas) VALUES
+(1, 'AKTUARIA', 'Fakultas Sains'),
+(2, 'BIOLOGI', 'Fakultas Sains'),
+(3, 'FARMASI', 'Fakultas Sains'),
+(4, 'FISIKA', 'Fakultas Sains'),
+(5, 'KIMIA', 'Fakultas Sains'),
+(6, 'MAGISTER FISIKA', 'Fakultas Sains'),
+(7, 'MATEMATIKA', 'Fakultas Sains'),
+(8, 'SAINS ATMOSFER DAN KEPLANETAN', 'Fakultas Sains'),
+(9, 'SAINS DATA', 'Fakultas Sains'),
+(10, 'SAINS LINGKUNGAN KELAUTAN', 'Fakultas Sains'),
+(11, 'REKAYASA INSTRUMENTASI DAN AUTOMASI', 'Fakultas Teknologi Industri'),
+(12, 'REKAYASA KEHUTANAN', 'Fakultas Teknologi Industri'),
+(13, 'REKAYASA KEOLAHRAGAAN', 'Fakultas Teknologi Industri'),
+(14, 'REKAYASA KOSMETIK', 'Fakultas Teknologi Industri'),
+(15, 'REKAYASA MINYAK DAN GAS', 'Fakultas Teknologi Industri'),
+(16, 'TEKNIK BIOMEDIS', 'Fakultas Teknologi Industri'),
+(17, 'TEKNIK BIOSISTEM', 'Fakultas Teknologi Industri'),
+(18, 'TEKNIK ELEKTRO', 'Fakultas Teknologi Industri'),
+(19, 'TEKNIK FISIKA', 'Fakultas Teknologi Industri'),
+(20, 'TEKNIK GEOFISIKA', 'Fakultas Teknologi Industri'),
+(21, 'TEKNIK GEOLOGI', 'Fakultas Teknologi Industri'),
+(22, 'TEKNIK INDUSTRI', 'Fakultas Teknologi Industri'),
+(23, 'TEKNIK INFORMATIKA', 'Fakultas Teknologi Industri'),
+(24, 'TEKNIK KIMIA', 'Fakultas Teknologi Industri'),
+(25, 'TEKNIK MATERIAL', 'Fakultas Teknologi Industri'),
+(26, 'TEKNIK MESIN', 'Fakultas Teknologi Industri'),
+(27, 'TEKNIK PERTAMBANGAN', 'Fakultas Teknologi Industri'),
+(28, 'TEKNIK SISTEM ENERGI', 'Fakultas Teknologi Industri'),
+(29, 'TEKNIK TELEKOMUNIKASI', 'Fakultas Teknologi Industri'),
+(30, 'TEKNOLOGI INDUSTRI PERTANIAN', 'Fakultas Teknologi Industri'),
+(31, 'TEKNOLOGI PANGAN', 'Fakultas Teknologi Industri'),
+(32, 'ARSITEKTUR', 'Fakultas Teknologi Industri dan Kewilayahan'),
+(33, 'ARSITEKTUR LANSKAP', 'Fakultas Teknologi Industri dan Kewilayahan'),
+(34, 'DESAIN KOMUNIKASI VISUAL', 'Fakultas Teknologi Industri dan Kewilayahan'),
+(35, 'PARIWISATA', 'Fakultas Teknologi Industri dan Kewilayahan'),
+(36, 'PERENCANAAN WILAYAH DAN KOTA', 'Fakultas Teknologi Industri dan Kewilayahan'),
+(37, 'REKAYASA TATA KELOLA AIR TERPADU', 'Fakultas Teknologi Industri dan Kewilayahan'),
+(38, 'TEKNIK GEOMATIKA', 'Fakultas Teknologi Industri dan Kewilayahan'),
+(39, 'TEKNIK KELAUTAN', 'Fakultas Teknologi Industri dan Kewilayahan'),
+(40, 'TEKNIK LINGKUNGAN', 'Fakultas Teknologi Industri dan Kewilayahan'),
+(41, 'TEKNIK PERKERETAAPIAN', 'Fakultas Teknologi Industri dan Kewilayahan'),
+(42, 'TEKNIK SIPIL', 'Fakultas Teknologi Industri dan Kewilayahan');

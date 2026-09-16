@@ -1,6 +1,6 @@
-CREATE TABLE gold.fact_sitasi AS
+CREATE OR REPLACE TABLE gold.fact_sitasi USING iceberg AS
 SELECT
-    ROW_NUMBER() OVER (ORDER BY d.dosen_id, j.jurnal_id) AS sitasi_id,
+    CAST(xxhash64(COALESCE(d.dosen_id, 0), COALESCE(j.jurnal_id, 0)) AS INT) AS sitasi_id,
     d.dosen_id,
     j.jurnal_id,
     COUNT(*) AS total_publikasi,

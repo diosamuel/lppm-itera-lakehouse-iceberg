@@ -1,5 +1,4 @@
-DROP TABLE IF EXISTS gold.fact_hibah;
-CREATE TABLE gold.fact_hibah AS
+CREATE OR REPLACE TABLE gold.fact_hibah USING iceberg PARTITIONED BY (identity(tahun)) AS
 WITH hibah_lengkap AS (
     SELECT
         id, jenis, tahun, status, ketua_peneliti, nip_ketua_peneliti,
@@ -20,7 +19,7 @@ WITH hibah_lengkap AS (
     FROM silver.buku_keilmuan
 )
 SELECT
-    ROW_NUMBER() OVER (ORDER BY h.id) AS hibah_fact_id,
+    CAST(xxhash64(h.id) AS INT) AS hibah_fact_id,
     d.dosen_id AS ketua_id,
     h.id AS hibah_proposal_id,
     sk.skema_id,

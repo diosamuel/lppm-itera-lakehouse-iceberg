@@ -1,6 +1,6 @@
-CREATE TABLE gold.dim_jurnal AS
+CREATE OR REPLACE TABLE gold.dim_jurnal USING iceberg AS
 SELECT
-    ROW_NUMBER() OVER (ORDER BY nama_jurnal) AS jurnal_id,
+    CAST(xxhash64(nama_jurnal, kategori_jurnal) AS INT) AS jurnal_id,
     nama_jurnal,
     rank_jurnal,
     kategori_jurnal

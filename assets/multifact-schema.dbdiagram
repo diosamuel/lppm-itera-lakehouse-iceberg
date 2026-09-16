@@ -18,7 +18,7 @@ Table dim_sdgs {
 Table dim_jurnal {
   jurnal_id INT [pk]
   nama_jurnal VARCHAR
-  rank_jurnal VARCHAR
+  rank_jurnal varchar
   kategori_jurnal VARCHAR
 }
 
@@ -67,6 +67,12 @@ Table fact_sitasi {
   total_nasional INT
 }
 
+Table dim_prodi {
+  prodi_id INT [pk]
+  nama_prodi STRING
+  nama_fakultas STRING
+}
+
 Ref: fact_hibah.ketua_id > dim_dosen.dosen_id
 Ref: fact_hibah.hibah_proposal_id > dim_hibah_proposal.hibah_proposal_id
 Ref: fact_hibah.skema_id > dim_skema.skema_id
@@ -75,3 +81,44 @@ Ref: fact_dosen_hibah.dosen_id > dim_dosen.dosen_id
 Ref: fact_dosen_hibah.hibah_proposal_id > dim_hibah_proposal.hibah_proposal_id
 Ref: fact_sitasi.dosen_id > dim_dosen.dosen_id
 Ref: fact_sitasi.jurnal_id > dim_jurnal.jurnal_id
+Ref: fact_dosen_hibah.prodi > dim_prodi.nama_prodi
+
+// --- Audit tables (WAP mismatch log) ---
+
+Table audit_faktor_hibah {
+  hibah_proposal_id VARCHAR [pk]
+  ketua_id INT
+  skema_id INT
+  sdgs_id INT
+  jenis_hibah VARCHAR
+  tahun INT
+  status_hibah VARCHAR
+  usulan_biaya BIGINT
+  mismatch_reason VARCHAR
+  audited_at TIMESTAMP
+}
+
+Table audit_dosen_hibah {
+  dosen_hibah_id INT [pk]
+  dosen_id INT
+  hibah_proposal_id VARCHAR
+  tahun INT
+  role VARCHAR
+  jenis_hibah VARCHAR
+  status_hibah VARCHAR
+  prodi VARCHAR
+  fakultas VARCHAR
+  mismatch_reason VARCHAR
+  audited_at TIMESTAMP
+}
+
+Table audit_sitasi {
+  sitasi_id INT [pk]
+  dosen_id INT
+  jurnal_id INT
+  total_publikasi INT
+  total_internasional INT
+  total_nasional INT
+  mismatch_reason VARCHAR
+  audited_at TIMESTAMP
+}

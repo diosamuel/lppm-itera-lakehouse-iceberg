@@ -1,220 +1,210 @@
-import os
+import sys
 from pathlib import Path
 
-from pyspark.sql import functions as F
-from pyspark.sql.window import Window
-
-from extract_transform import Transform
-from setup_catalog import SetupIcebergCatalog
-from setup_minio import SetupMinioS3
-from setup_spark import SetupSpark
-
-
 BASE_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(BASE_DIR))
 
+from pyspark.sql import functions as F
+# from audit.audit_table import TABLES as WAP_TABLES, wap_publish, wap_write
+from setup.setup_catalog import SetupIcebergCatalog
+from setup.setup_spark import SetupSpark
+from tools.dosen_name_mapper import map_dosen_name_udf
+from transform.extract_transform import Transform
 
 def run_sql_file(spark, sql_file):
-    sql_text = Path(sql_file).read_text(encoding="utf-8")
+    sql_text = (BASE_DIR / "schema" / sql_file).read_text(encoding="utf-8")
     statements = [statement.strip() for statement in sql_text.split(";") if statement.strip()]
     for statement in statements:
         spark.sql(statement)
 
 
-# Initialize storage
-StorageS3 = SetupMinioS3(
-    endpoint_url="http://minio:9000",
-    bucket="sipaper",
-).initialize()
+def year_sheets_from_bronze(spark, table):
+    rows = (
+        spark.read.table(table)
+        .select("tahun")
+        .distinct()
+        .orderBy("tahun")
+        .collect()
+    )
+    return [str(r.tahun) for r in rows]
 
-# Upload PDF documents
-PDF_BASE_DIR = "/home/iceberg/notebooks/data/pdf"
-YEARS = ["2021", "2022", "2023", "2024", "2025"]
 
-for research_type in ["penelitian", "pengabdian"]:
-    type_dir = os.path.join(PDF_BASE_DIR, research_type)
-    if not os.path.isdir(type_dir):
-        continue
-    for subfolder in os.listdir(type_dir):
-        subfolder_path = os.path.join(type_dir, subfolder)
-        if not os.path.isdir(subfolder_path):
-            continue
-        for filename in os.listdir(subfolder_path):
-            filepath = os.path.join(subfolder_path, filename)
-            if not os.path.isfile(filepath):
-                continue
-            for year in YEARS:
-                s3_key = f"{research_type}/{year}/pdf/{subfolder}/{filename}"
-                result = StorageS3.upload(filename=s3_key, filepath=filepath)
-                if result.get("status") == "success":
-                    print(f"Uploaded: s3://sipaper/{s3_key}")
-                else:
-                    print(f"Skipped: s3://sipaper/{s3_key} ({result.get('message')})")
+def _bronze_df(spark, category, bronze_cache=None):
+    if bronze_cache and category in bronze_cache:
+        return bronze_cache[category]
+    return spark.read.table(f"bronze.{category}")
 
-# Initialize PDF folder structure
-DOC_TYPES = ["laporan_akhir", "laporan_kemajuan", "proposal"]
 
-for research_type in ["penelitian", "pengabdian"]:
-    for year in YEARS:
-        for doc_type in DOC_TYPES:
-            folder_key = f"{research_type}/{year}/pdf/{doc_type}/"
-            StorageS3.client.put_object(Bucket="sipaper", Key=folder_key, Body=b"")
-            print(f"Created folder: s3://sipaper/{folder_key}")
-
-# Initialize catalog and spark
-IcebergCatalog = SetupIcebergCatalog(
-    catalog_name="default",
-    namespace="silver",
-).initialize()
-
-SparkSession = SetupSpark(
-    app_name="sipaper",
-    catalog_name="default",
-).initialize()
-
-# Upload CSV files
-list_directory = os.listdir("/home/iceberg/notebooks/data")
-for file in list_directory:
-    if file.endswith(".csv"):
-        print(file)
-        research_type = file.rsplit("_", 1)[0]
-        year = file.rsplit("_", 1)[1].split(".")[0]
-        file_endpoint = None
-        if research_type == "penelitian":
-            file_endpoint = f"/penelitian/{year}/csv/{file}"
-        elif research_type == "pengabdian":
-            file_endpoint = f"/pengabdian/{year}/csv/{file}"
-        elif research_type == "buku_keilmuan":
-            file_endpoint = f"/buku_keilmuan/{year}/csv/{file}"
-        elif research_type == "sitasi":
-            file_endpoint = f"/sitasi/{year}/csv/{file}"
-
-        if file_endpoint is None:
-            print(f"Skipping unrecognised file: {file}")
-            continue
-
-        StorageS3.upload(
-            filename=file_endpoint,
-            filepath=f"/home/iceberg/notebooks/data/{file}",
+def buildSilverHibah(spark, category, bronze_cache, id_prefix):
+    builder = Transform(spark=spark, document_type=category)
+    for sheet in year_sheets_from_bronze(spark, f"bronze.{category}"):
+        df = (
+            _bronze_df(spark, category, bronze_cache)
+            .filter(F.col("tahun") == int(sheet))
+            .drop("tahun")
         )
+        builder.processData(df, int(sheet))
+    res = builder.join()
+    res = res.withColumn(
+        "id",
+        F.concat(
+            F.lit(id_prefix),
+            F.xxhash64(
+                F.coalesce(F.col("judul_proposal"), F.lit("")),
+                F.coalesce(F.col("ketua_peneliti"), F.lit("")),
+                F.col("tahun"),
+            ).cast("string"),
+        ),
+    )
+    res.writeTo(f"silver.{category}").createOrReplace()
+    print(f"Written silver.{category}")
 
-# Penelitian
-csv_penelitian = [
-    StorageS3.load("penelitian/2021/csv/penelitian_2021.csv"),
-    StorageS3.load("penelitian/2022/csv/penelitian_2022.csv"),
-    StorageS3.load("penelitian/2023/csv/penelitian_2023.csv"),
-    StorageS3.load("penelitian/2024/csv/penelitian_2024.csv"),
-    StorageS3.load("penelitian/2025/csv/penelitian_2025.csv"),
+
+def buildSilverSitasi(spark, bronze_cache):
+    builder = Transform(spark=spark, document_type="sitasi")
+    for sheet in year_sheets_from_bronze(spark, "bronze.sitasi"):
+        df = (
+            _bronze_df(spark, "sitasi", bronze_cache)
+            .filter(F.col("tahun") == int(sheet))
+            .drop("tahun")
+        )
+        builder.processSitasiData(df, int(sheet))
+    res = builder.join()
+    res = res.withColumn(
+        "ketua_peneliti",
+        map_dosen_name_udf(F.col("ketua_peneliti")),
+    )
+    res = res.withColumn(
+        "id",
+        F.concat(
+            F.lit("SITASI-"),
+            F.xxhash64(
+                F.coalesce(F.col("judul_proposal"), F.lit("")),
+                F.coalesce(F.col("ketua_peneliti"), F.lit("")),
+                F.coalesce(F.col("doi"), F.lit("")),
+            ).cast("string"),
+        ),
+    )
+    res.writeTo("silver.sitasi").createOrReplace()
+    print("Written silver.sitasi")
+
+
+SILVER_BUILDERS = {
+    "penelitian": lambda spark, cache: buildSilverHibah(spark, "penelitian", cache, "PENELITIAN-"),
+    "pengabdian": lambda spark, cache: buildSilverHibah(spark, "pengabdian", cache, "PENGABDIAN-"),
+    "buku_keilmuan": lambda spark, cache: buildSilverHibah(spark, "buku_keilmuan", cache, "BUKU_KEILMUAN-"),
+    "sitasi": buildSilverSitasi,
+}
+
+
+GOLD_DDL_FILES = [
+    "dim_prodi.sql",
+    "dim_skema.sql",
+    "dim_sdgs.sql",
+    "dim_dosen.sql",
+    "dim_jurnal.sql",
+    "dim_hibah_proposal.sql",
+    "fact_hibah.sql",
+    "fact_dosen_hibah.sql",
+    "fact_sitasi.sql",
 ]
 
-res = (
-    Transform(spark=SparkSession, document_type="penelitian")
-    .processData(csv_penelitian[0]["path"], 2021)
-    .processData(csv_penelitian[1]["path"], 2022)
-    .processData(csv_penelitian[2]["path"], 2023)
-    .processData(csv_penelitian[3]["path"], 2024)
-    .processData(csv_penelitian[4]["path"], 2025)
-    .join()
-)
-res = res.withColumn(
-    "id",
-    F.concat(F.lit("PENELITIAN-"), F.row_number().over(Window.orderBy("judul_proposal"))),
-)
-res.writeTo("silver.penelitian").createOrReplace()
-print("Written silver.penelitian")
 
-# Pengabdian
-csv_pengabdian = [
-    StorageS3.load("pengabdian/2021/csv/pengabdian_2021.csv"),
-    StorageS3.load("pengabdian/2022/csv/pengabdian_2022.csv"),
-    StorageS3.load("pengabdian/2023/csv/pengabdian_2023.csv"),
-    StorageS3.load("pengabdian/2024/csv/pengabdian_2024.csv"),
-    StorageS3.load("pengabdian/2025/csv/pengabdian_2025.csv"),
+def buildGoldTable(spark):
+    for sql_file in GOLD_DDL_FILES:
+        run_sql_file(spark, sql_file)
+        print(f"Written gold.{sql_file.removesuffix('.sql')}")
+
+
+# Gold tables downstream of the silver tables repaired by the data_quality_check
+# DAG (silver hibah + silver.sitasi). The static dims (dim_prodi, dim_skema,
+# dim_sdgs) are deliberately excluded, so a rebuild does not touch all of gold.
+# dim_dosen is handled separately in rebuildGoldDependents (see below).
+GOLD_DEPENDENT_FILES = [
+    "dim_hibah_proposal.sql",
+    "fact_hibah.sql",
+    "fact_dosen_hibah.sql",
+    "dim_jurnal.sql",
+    "fact_sitasi.sql",
 ]
 
-res = (
-    Transform(spark=SparkSession, document_type="pengabdian")
-    .processData(csv_pengabdian[0]["path"], 2021)
-    .processData(csv_pengabdian[1]["path"], 2022)
-    .processData(csv_pengabdian[2]["path"], 2023)
-    .processData(csv_pengabdian[3]["path"], 2024)
-    .processData(csv_pengabdian[4]["path"], 2025)
-    .join()
-)
-res = res.withColumn(
-    "id",
-    F.concat(F.lit("PENGABDIAN-"), F.row_number().over(Window.orderBy("judul_proposal"))),
-)
-res.writeTo("silver.pengabdian").createOrReplace()
-print("Written silver.pengabdian")
 
-# Buku Keilmuan
-csv_buku_keilmuan = [
-    StorageS3.load("buku_keilmuan/2023/csv/buku_keilmuan_2023.csv"),
-    StorageS3.load("buku_keilmuan/2024/csv/buku_keilmuan_2024.csv"),
-]
+def rebuildGoldDependents(spark):
+    """Rebuild only the gold tables downstream of the data_quality_check repairs.
 
-res = (
-    Transform(spark=SparkSession, document_type="buku_keilmuan")
-    .processData(csv_buku_keilmuan[0]["path"], 2023)
-    .processData(csv_buku_keilmuan[1]["path"], 2024)
-    .join()
-)
-res = res.withColumn(
-    "id",
-    F.concat(F.lit("BUKU_KEILMUAN-"), F.row_number().over(Window.orderBy("judul_proposal"))),
-)
-res.writeTo("silver.buku_keilmuan").createOrReplace()
-print("Written silver.buku_keilmuan")
+    The DAG repairs silver.penelitian/pengabdian/buku_keilmuan (purge null judul,
+    swap skema/sdgs) and silver.sitasi (dosen mapping). Gold was built from the
+    pre-repair silver, so those tables are stale. Order matters:
 
-# Sitasi
-csv_sitasi = [
-    StorageS3.load("sitasi/2026/csv/sitasi_2026.csv"),
-]
+    1. dim_dosen is rebuilt from its hibah-only DDL first. This intentionally
+       drops the sitasi-derived dosen rows the dosen WAP had added.
+    2. The dosen WAP is re-applied, re-inserting those sitasi dosen. It must run
+       before fact_sitasi, which joins dim_dosen to resolve dosen_id.
+    3. The remaining dependent dims/facts are rebuilt.
+    """
+    from write.dosen_mapping import (
+        build_name_lookup,
+        register_invalid_udf,
+        wap_publish,
+        wap_write_dim_dosen,
+        wap_write_sitasi,
+    )
 
-res = Transform(spark=SparkSession, document_type="sitasi").processSitasiData(csv_sitasi[0]["path"], 2026).join()
-res = res.withColumn(
-    "id",
-    F.concat(F.lit("SITASI-"), F.row_number().over(Window.orderBy("judul_proposal"))),
-)
-res.writeTo("silver.sitasi").createOrReplace()
-print("Written silver.sitasi")
+    run_sql_file(spark, "dim_dosen.sql")
+    print("Written gold.dim_dosen")
 
-# Skema Mapping
-SparkSession.sql("DROP TABLE IF EXISTS silver.dim_skema")
-run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_skema.sql")
-print("Written silver.dim_skema")
+    register_invalid_udf(spark)
+    lookup = build_name_lookup(spark)
+    wap_write_sitasi(spark, lookup)
+    wap_write_dim_dosen(spark)
+    if not wap_publish(spark):
+        raise RuntimeError("dosen WAP publish diblokir — rebuild gold dibatalkan")
 
-# SDGs Mapping
-SparkSession.sql("DROP TABLE IF EXISTS silver.dim_sdgs")
-run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_sdgs.sql")
-print("Written silver.dim_sdgs")
+    for sql_file in GOLD_DEPENDENT_FILES:
+        run_sql_file(spark, sql_file)
+        print(f"Written gold.{sql_file.removesuffix('.sql')}")
 
-# Dimensi Dosen (Gold)
-SparkSession.sql("DROP TABLE IF EXISTS gold.dim_dosen")
-run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_dosen.sql")
-print("Written gold.dim_dosen")
 
-# Dimensi Jurnal (Gold)
-SparkSession.sql("DROP TABLE IF EXISTS gold.dim_jurnal")
-run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_jurnal.sql")
-print("Written gold.dim_jurnal")
+def runSilverGold(spark, bronze_cache=None, categories=None):
+    """Build silver and gold tables.
 
-# Dimensi Hibah Proposal (Gold)
-SparkSession.sql("DROP TABLE IF EXISTS gold.dim_hibah_proposal")
-run_sql_file(SparkSession, BASE_DIR / "schema" / "dim_hibah_proposal.sql")
-print("Written gold.dim_hibah_proposal")
+    Args:
+        spark: active SparkSession.
+        bronze_cache: optional {category: DataFrame} cache from the bronze
+            ingest step (avoids re-reading changed categories).
+        categories: iterable of silver categories to rebuild. None (default) means
+            all categories. Silver tables outside `categories` are left untouched;
+            gold is always fully rebuilt from the resulting silver tables.
+    """
+    if categories is None:
+        categories = list(SILVER_BUILDERS.keys())
+    categories = set(categories)
 
-# Fakta Dosen Hibah (Gold)
-SparkSession.sql("DROP TABLE IF EXISTS gold.fact_dosen_hibah")
-run_sql_file(SparkSession, BASE_DIR / "schema" / "fact_dosen_hibah.sql")
-print("Written gold.fact_dosen_hibah")
+    for category, build in SILVER_BUILDERS.items():
+        if category not in categories:
+            print(f"Skipped silver.{category} (not in changed categories)")
+            continue
+        build(spark, bronze_cache)
 
-# Fakta Hibah (Gold)
-SparkSession.sql("DROP TABLE IF EXISTS gold.fact_hibah")
-run_sql_file(SparkSession, BASE_DIR / "schema" / "fact_hibah.sql")
-print("Written gold.fact_hibah")
+    # print("Running WAP audit & repair on silver tables...")
+    # for t in WAP_TABLES:
+    #     wap_write(spark, t)
+    #     wap_publish(spark, t)
 
-# Fakta Sitasi (Gold)
-SparkSession.sql("DROP TABLE IF EXISTS gold.fact_sitasi")
-run_sql_file(SparkSession, BASE_DIR / "schema" / "fact_sitasi.sql")
-print("Written gold.fact_sitasi")
+    buildGoldTable(spark)
+
+
+if __name__ == "__main__":
+    IcebergCatalog = SetupIcebergCatalog(
+        catalog_name="default",
+        namespace="silver",
+    ).initialize()
+    # IcebergCatalog.create_namespace("bronze")
+    # IcebergCatalog.create_namespace("gold")
+    # audit/DQ namespace — tabel hasil data-quality check (dq.dq_results, dst.)
+    # IcebergCatalog.create_namespace("dq")
+    SparkSession = SetupSpark(
+        app_name="sipaper",
+        catalog_name="default",
+    ).initialize()
+    runSilverGold(SparkSession)
